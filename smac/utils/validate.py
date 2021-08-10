@@ -270,7 +270,8 @@ class Validator(object):
             results as returned by tae
         """
         # Runs with parallel
-        run_results = Parallel(n_jobs=n_jobs, backend=backend)(
+        self.logger.info(f'Running {len(runs)} runs...')
+        run_results = Parallel(n_jobs=n_jobs, backend=backend, verbose=10)(
             delayed(_unbound_tae_starter)(
                 tae,
                 runhistory,
