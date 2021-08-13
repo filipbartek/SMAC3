@@ -3,6 +3,8 @@ import sys
 import logging
 import numpy as np
 import typing
+import math
+import neptune.new as neptune
 
 from smac.configspace import Configuration
 from smac.utils.io.cmd_reader import CMDReader
@@ -39,13 +41,19 @@ class SMACCLI(object):
 
     def main_cli(self, commandline_arguments: typing.Optional[typing.List[str]] = None) -> None:
         """Main function of SMAC for CLI interface"""
+        run = neptune.get_last_run()
+
         self.logger.info("SMAC call: %s" % (" ".join(sys.argv)))
+        run['argv'] = ' '.join(sys.argv)
 
         cmd_reader = CMDReader()
         kwargs = {}
         if commandline_arguments:
             kwargs['commandline_arguments'] = commandline_arguments
         main_args_, smac_args_, scen_args_ = cmd_reader.read_cmd(**kwargs)
+        run['args/main'] = vars(main_args_)
+        run['args/smac'] = vars(smac_args_)
+        run['args/scen'] = {k: format_value(k, v) for k, v in vars(scen_args_).items()}
 
         root_logger = logging.getLogger()
         root_logger.setLevel(main_args_.verbose_level)
@@ -166,6 +174,7 @@ class SMACCLI(object):
                 n_optimizers=main_args_.hydra_n_optimizers,
                 n_incs=main_args_.hydra_incumbents_per_round,
             )
+        run['optimizer/output_dir'] = optimizer.output_dir
         try:
             optimizer.optimize()
         except (TAEAbortException, FirstRunCrashedException) as err:
@@ -232,3 +241,19 @@ def cmd_line_call() -> None:
     """
     smac = SMACCLI()
     smac.main_cli()
+
+
+def format_value(k, v):
+    if k in ('train_insts', 'test_insts'):
+        assert all(len(r) == 1 for r in v)
+        return {
+            'n': len(v),
+            'commonpath': os.path.commonpath(r[0] for r in v)
+        }
+    if k == 'feature_dict':
+        return {'n': len(v)}
+    if k == 'features':
+        return v[0]
+    if isinstance(v, float) and not math.isfinite(v):
+        return str(v)
+    return v

@@ -4,6 +4,7 @@ import os
 import time
 import typing
 
+import neptune.new as neptune
 import numpy as np
 
 from smac.scenario.scenario import Scenario
@@ -216,3 +217,10 @@ class Stats(object):
                 self._ema_n_configs_per_intensifiy))
 
         log_func("##########################################################")
+
+    def log(self, run=None):
+        if run is None:
+            run = neptune.get_last_run()
+        for k in ['submitted_ta_runs', 'finished_ta_runs', 'n_configs', 'wallclock_time_used', 'ta_time_used',
+                  'inc_changed', '_n_configs_per_intensify', '_n_calls_of_intensify', '_ema_n_configs_per_intensifiy']:
+            run[f'stats/{k}'].log(getattr(self, k))

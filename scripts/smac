@@ -5,6 +5,9 @@ import sys
 import os
 import inspect
 
+import neptune.new as neptune
+from neptune.new.integrations.python_logger import NeptuneHandler
+
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))
 cmd_folder = os.path.realpath(os.path.join(cmd_folder, ".."))
 if cmd_folder not in sys.path:
@@ -14,6 +17,12 @@ from smac.smac_cli import SMACCLI
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+
+    run = neptune.init()
+    logging.getLogger().addHandler(NeptuneHandler(run=run))
+    run['env'] = os.environ
+    run['cmd_folder'] = cmd_folder
+    run['cwd'] = os.getcwd()
 
     smac = SMACCLI()
     smac.main_cli()

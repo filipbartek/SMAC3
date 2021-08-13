@@ -1,5 +1,6 @@
 import os
 import logging
+import neptune.new as neptune
 import numpy as np
 import time
 import typing
@@ -195,10 +196,18 @@ class SMBO(object):
         incumbent: np.array(1, H)
             The best found configuration
         """
+        neptune_run = neptune.get_last_run()
         self.start()
 
         # Main BO loop
+        bo_iterations = 0
         while True:
+            neptune_run['bo_iterations'].log(bo_iterations)
+            bo_iterations += 1
+            neptune_run['initial_design_configs_count'].log(len(self.initial_design_configs))
+            # TODO: Try to log `self.intensifier.new_challenger` (set later).
+            for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:
+                neptune_run[f'intensifier/{k}'].log(getattr(self.intensifier, k))
             if self.scenario.shared_model:  # type: ignore[attr-defined] # noqa F821
                 pSMAC.read(run_history=self.runhistory,
                            output_dirs=self.scenario.input_psmac_dirs,  # type: ignore[attr-defined] # noqa F821
@@ -231,6 +240,7 @@ class SMBO(object):
                 time_spent = time_spent + (time.time() - start_time)
                 time_left = self._get_timebound_for_intensification(time_spent, update=True)
                 self.logger.debug('Updated intensification time bound from %f to %f', old_time_left, time_left)
+            neptune_run['intensification_time_bound'].log(time_left)
 
             # Skip starting new runs if the budget is now exhausted
             if self.stats.is_budget_exhausted():
@@ -278,6 +288,9 @@ class SMBO(object):
                 self.tae_runner.wait()
             else:
                 raise NotImplementedError("No other RunInfoIntent has been coded!")
+            neptune_run['intent'].log(intent)
+            for k, v in run_info._asdict().items():
+                neptune_run[f'run_info/{k}'].log(v)
 
             # Check if there is any result, or else continue
             for run_info, result in self.tae_runner.get_finished_runs():
@@ -296,6 +309,8 @@ class SMBO(object):
                 self.stats.get_remaing_time_budget(),
                 self.stats.get_remaining_ta_budget(),
                 self.stats.get_remaining_ta_runs()))
+
+            self.stats.log(neptune_run)
 
             if self.stats.is_budget_exhausted() or self._stop:
                 if self.stats.is_budget_exhausted():
