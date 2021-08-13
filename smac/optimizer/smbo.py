@@ -205,7 +205,6 @@ class SMBO(object):
             neptune_run['bo_iterations'].log(bo_iterations)
             bo_iterations += 1
             neptune_run['initial_design_configs_count'].log(len(self.initial_design_configs))
-            # TODO: Try to log `self.intensifier.new_challenger` (set later).
             for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:
                 neptune_run[f'intensifier/{k}'].log(getattr(self.intensifier, k))
             if self.scenario.shared_model:  # type: ignore[attr-defined] # noqa F821
