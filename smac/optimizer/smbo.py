@@ -205,8 +205,12 @@ class SMBO(object):
             neptune_run['bo_iterations'].log(bo_iterations)
             bo_iterations += 1
             neptune_run['initial_design_configs_count'].log(len(self.initial_design_configs))
+            if self.incumbent is not None:
+                neptune_run['inc/runs'].log(len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)), bo_iterations)
+                neptune_run['inc/perf'].log(self.runhistory.get_cost(self.incumbent), bo_iterations)
             for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:
                 neptune_run[f'intensifier/{k}'].log(getattr(self.intensifier, k))
+            neptune_run[f'intensifier/to_run_count'].log(len(self.intensifier.to_run))
             if self.scenario.shared_model:  # type: ignore[attr-defined] # noqa F821
                 pSMAC.read(run_history=self.runhistory,
                            output_dirs=self.scenario.input_psmac_dirs,  # type: ignore[attr-defined] # noqa F821
