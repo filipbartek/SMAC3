@@ -59,6 +59,8 @@ def optimize(scenario: typing.Type[Scenario],
     solver.stats.start_timing()
     solver.stats.print_stats()
 
+    solver.solver.neptune_field('output_dir').assign(solver.output_dir)
+
     incumbent = solver.solver.run()
     solver.stats.print_stats()
 
@@ -66,6 +68,7 @@ def optimize(scenario: typing.Type[Scenario],
         solver.solver.runhistory.save_json(
             fn=os.path.join(solver.output_dir, "runhistory.json")
         )
+        solver.solver.neptune_field('runhistory.json').upload(os.path.join(solver.output_dir, "runhistory.json"))
     return incumbent
 
 

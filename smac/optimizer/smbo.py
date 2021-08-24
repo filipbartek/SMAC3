@@ -343,6 +343,7 @@ class SMBO(object):
             if self.intensifier.iteration_done:
                 self.stats.print_stats(debug_out=True)
 
+        self.neptune_field('incumbent').assign(self.incumbent)
         return self.incumbent
 
     def validate(self,
