@@ -11,6 +11,7 @@ from collections import defaultdict
 
 import pickle
 
+import neptune.new as neptune
 import numpy as np
 
 from ConfigSpace.configuration_space import Configuration
@@ -162,6 +163,8 @@ class Hydra(object):
             Portfolio of found configurations
 
         """
+        run = neptune.get_last_run()
+
         # Setup output directory
         self.portfolio = []
         portfolio_cost = np.inf
@@ -171,6 +174,8 @@ class Hydra(object):
             self.scenario.output_dir = os.path.join(self.top_dir, "psmac3-output_%s" % (
                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S_%f')))
             self.output_dir = create_output_directory(self.scenario, run_id=self.run_id, logger=self.logger)
+        run['hydra'] = {k: getattr(self, k) for k in
+                        ['incs_per_round', 'n_iterations', 'n_optimizers', 'run_id', 'top_dir']}
 
         scen = copy.deepcopy(self.scenario)
         scen.output_dir_for_this_run = None
@@ -179,8 +184,10 @@ class Hydra(object):
         self.solver = SMAC4AC(scenario=scen, tae_runner=self._tae, rng=self.rng, run_id=self.run_id, **self.kwargs,
                               tae_runner_kwargs=self._tae_kwargs)
         for i in range(self.n_iterations):
+            run['hydra/output_dir'].log(self.output_dir)
             self.logger.info("=" * 120)
             self.logger.info("Hydra Iteration: %d", (i + 1))
+            run['hydra/iteration'].log(i + 1)
 
             if i == 0:
                 tae = self._tae
@@ -207,6 +214,7 @@ class Hydra(object):
             )
             self.optimizer.output_dir = self.output_dir
             incs = self.optimizer.optimize()
+            run['hydra/incs/all'].log(incs)
             cost_per_conf_v, val_ids, cost_per_conf_e, est_ids = self.optimizer.get_best_incumbents_ids(incs)
             if self.val_set:
                 to_keep_ids = val_ids[:self.incs_per_round]
@@ -214,12 +222,14 @@ class Hydra(object):
                 to_keep_ids = est_ids[:self.incs_per_round]
             config_cost_per_inst = {}
             incs = [incs[i] for i in to_keep_ids]
+            run['hydra/incs/kept'].log(incs)
             self.logger.info('Kept incumbents')
             for inc in incs:
                 self.logger.info(inc)
                 config_cost_per_inst[inc] = cost_per_conf_v[inc] if self.val_set else cost_per_conf_e[inc]
 
             cur_portfolio_cost = self._update_portfolio(incs, config_cost_per_inst)
+            run['hydra/cur_portfolio_cost'].log(cur_portfolio_cost)
             if portfolio_cost <= cur_portfolio_cost:
                 self.logger.info("No further progress (%f) --- terminate hydra", portfolio_cost)
                 break
@@ -232,12 +242,15 @@ class Hydra(object):
             self.output_dir = create_output_directory(self.scenario, run_id=self.run_id, logger=self.logger)
         read(self.rh, os.path.join(self.top_dir, 'psmac3*', 'run_' + str(MAXINT)), self.scenario.cs, self.logger)
         self.rh.save_json(fn=os.path.join(self.top_dir, 'all_validated_runs_runhistory.json'), save_external=True)
+        run['hydra/runhistory'].upload(os.path.join(self.top_dir, 'all_validated_runs_runhistory.json'))
         with open(os.path.join(self.top_dir, 'portfolio.pkl'), 'wb') as fh:
             pickle.dump(self.portfolio, fh)
+        run['hydra/portfolio/pkl'].upload(os.path.join(self.top_dir, 'portfolio.pkl'))
         self.logger.info("~" * 120)
         self.logger.info('Resulting Portfolio:')
         for configuration in self.portfolio:
             self.logger.info(str(configuration))
+        run['hydra/portfolio/str'] = self.portfolio
         self.logger.info("~" * 120)
 
         return self.portfolio
