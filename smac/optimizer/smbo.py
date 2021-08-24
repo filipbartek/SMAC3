@@ -196,21 +196,23 @@ class SMBO(object):
         incumbent: np.array(1, H)
             The best found configuration
         """
-        neptune_run = neptune.get_last_run()
+        self.neptune_field('config_space').assign(self.config_space)
+        self.neptune_field('num_run').assign(self.num_run)
+
         self.start()
 
         # Main BO loop
         bo_iterations = 0
         while True:
-            neptune_run['bo_iterations'].log(bo_iterations)
+            self.neptune_field('bo_iterations').log(bo_iterations)
             bo_iterations += 1
-            neptune_run['initial_design_configs_count'].log(len(self.initial_design_configs))
+            self.neptune_field('initial_design_configs_count').log(len(self.initial_design_configs))
             if self.incumbent is not None:
-                neptune_run['inc/runs'].log(len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)), bo_iterations)
-                neptune_run['inc/perf'].log(self.runhistory.get_cost(self.incumbent), bo_iterations)
+                self.neptune_field('inc/runs').log(len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)), bo_iterations)
+                self.neptune_field('inc/perf').log(self.runhistory.get_cost(self.incumbent), bo_iterations)
             for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:
-                neptune_run[f'intensifier/{k}'].log(getattr(self.intensifier, k))
-            neptune_run[f'intensifier/to_run_count'].log(len(self.intensifier.to_run))
+                self.neptune_field(f'intensifier/{k}').log(getattr(self.intensifier, k))
+            self.neptune_field('intensifier/to_run_count').log(len(self.intensifier.to_run))
             if self.scenario.shared_model:  # type: ignore[attr-defined] # noqa F821
                 pSMAC.read(run_history=self.runhistory,
                            output_dirs=self.scenario.input_psmac_dirs,  # type: ignore[attr-defined] # noqa F821
@@ -243,7 +245,7 @@ class SMBO(object):
                 time_spent = time_spent + (time.time() - start_time)
                 time_left = self._get_timebound_for_intensification(time_spent, update=True)
                 self.logger.debug('Updated intensification time bound from %f to %f', old_time_left, time_left)
-            neptune_run['intensification_time_bound'].log(time_left)
+            self.neptune_field('intensification_time_bound').log(time_left)
 
             # Skip starting new runs if the budget is now exhausted
             if self.stats.is_budget_exhausted():
@@ -291,9 +293,9 @@ class SMBO(object):
                 self.tae_runner.wait()
             else:
                 raise NotImplementedError("No other RunInfoIntent has been coded!")
-            neptune_run['intent'].log(intent)
+            self.neptune_field('intent').log(intent)
             for k, v in run_info._asdict().items():
-                neptune_run[f'run_info/{k}'].log(v)
+                self.neptune_field(f'run_info/{k}').log(v)
 
             # Check if there is any result, or else continue
             for run_info, result in self.tae_runner.get_finished_runs():
@@ -313,7 +315,7 @@ class SMBO(object):
                 self.stats.get_remaining_ta_budget(),
                 self.stats.get_remaining_ta_runs()))
 
-            self.stats.log(neptune_run)
+            self.stats.log(self.neptune_field)
 
             if self.stats.is_budget_exhausted() or self._stop:
                 if self.stats.is_budget_exhausted():
@@ -525,3 +527,17 @@ class SMBO(object):
             self.runhistory.save_json(
                 fn=os.path.join(output_dir, "runhistory.json")
             )
+
+    def neptune_field(self, path):
+        namespace = None
+        if self.scenario.input_psmac_dirs is not None:
+            namespace = f'run/{self.num_run}'
+            path = f'{namespace}/{path}'
+        try:
+            run = neptune.get_last_run()
+        except neptune.NeptuneUninitializedException:
+            monitoring_namespace = None
+            if namespace is not None:
+                monitoring_namespace = f'{namespace}/monitoring'
+            run = neptune.init(monitoring_namespace=monitoring_namespace)
+        return run[path]
