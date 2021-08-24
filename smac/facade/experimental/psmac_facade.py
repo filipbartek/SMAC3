@@ -68,7 +68,7 @@ def optimize(scenario: typing.Type[Scenario],
         solver.solver.runhistory.save_json(
             fn=os.path.join(solver.output_dir, "runhistory.json")
         )
-        solver.solver.neptune_field('runhistory.json').upload(os.path.join(solver.output_dir, "runhistory.json"))
+        solver.solver.neptune_field('runhistory').upload(os.path.join(solver.output_dir, "runhistory.json"))
     return incumbent
 
 
