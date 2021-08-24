@@ -23,6 +23,7 @@ from smac.utils.merge_foreign_data import merge_foreign_data_from_file
 from smac.utils.io.traj_logging import TrajLogger
 from smac.tae import TAEAbortException, FirstRunCrashedException
 from smac.utils.io.output_directory import create_output_directory
+from smac.utils.neptune import configspace_to_dict
 
 __author__ = "Marius Lindauer"
 __copyright__ = "Copyright 2015, ML4AAD"
@@ -266,6 +267,8 @@ def format_value(k, v):
         return {'n': len(v)}
     if k == 'features':
         return v[0]
+    if k == 'cs':
+        return configspace_to_dict(v)
     if isinstance(v, float) and not math.isfinite(v):
         return str(v)
     return v

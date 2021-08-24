@@ -28,6 +28,7 @@ from smac.tae import (
 from smac.tae.base import BaseRunner
 from smac.utils.io.traj_logging import TrajLogger
 from smac.utils.validate import Validator
+from smac.utils.neptune import configspace_to_dict
 
 __author__ = "Aaron Klein, Marius Lindauer, Matthias Feurer"
 __copyright__ = "Copyright 2015, ML4AAD"
@@ -196,7 +197,7 @@ class SMBO(object):
         incumbent: np.array(1, H)
             The best found configuration
         """
-        self.neptune_field('config_space').assign(self.config_space)
+        self.neptune_field('config_space').assign(configspace_to_dict(self.config_space))
         self.neptune_field('num_run').assign(self.num_run)
 
         self.start()
@@ -210,7 +211,13 @@ class SMBO(object):
                 self.neptune_field('inc/runs').log(len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)), bo_iterations)
                 self.neptune_field('inc/perf').log(self.runhistory.get_cost(self.incumbent), bo_iterations)
             for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:
-                self.neptune_field(f'intensifier/{k}').log(getattr(self.intensifier, k))
+                v = getattr(self.intensifier, k)
+                if k == 'current_challenger':
+                    if v is not None:
+                        for config_k, config_v in v.get_dictionary().items():
+                            self.neptune_field(f'intensifier/{k}/{config_k}').log(config_v, bo_iterations)
+                    continue
+                self.neptune_field(f'intensifier/{k}').log(v)
             self.neptune_field('intensifier/to_run_count').log(len(self.intensifier.to_run))
             if self.scenario.shared_model:  # type: ignore[attr-defined] # noqa F821
                 pSMAC.read(run_history=self.runhistory,
@@ -294,6 +301,10 @@ class SMBO(object):
                 raise NotImplementedError("No other RunInfoIntent has been coded!")
             self.neptune_field('intent').log(intent)
             for k, v in run_info._asdict().items():
+                if k == 'config':
+                    for config_k, config_v in v.get_dictionary().items():
+                        self.neptune_field(f'run_info/{k}/{config_k}').log(config_v)
+                    continue
                 self.neptune_field(f'run_info/{k}').log(v)
 
             # Check if there is any result, or else continue
