@@ -205,7 +205,6 @@ class SMBO(object):
         bo_iterations = 0
         while True:
             self.neptune_field('bo_iterations').log(bo_iterations)
-            bo_iterations += 1
             self.neptune_field('initial_design_configs_count').log(len(self.initial_design_configs))
             if self.incumbent is not None:
                 self.neptune_field('inc/runs').log(len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)), bo_iterations)
@@ -342,6 +341,8 @@ class SMBO(object):
             # print stats at the end of each intensification iteration
             if self.intensifier.iteration_done:
                 self.stats.print_stats(debug_out=True)
+
+            bo_iterations += 1
 
         self.neptune_field('incumbent').assign(self.incumbent)
         return self.incumbent
