@@ -367,11 +367,15 @@ class LocalSearch(AcquisitionFunctionMaximizer):
                             n = next(neighborhood_iterator)
                             neighbors_generated[i] += 1
                             neighbors_for_i.append(n)
+                        except ValueError as e:
+                            self.logger.debug(e)
+                            new_neighborhood[i] = True
                         except StopIteration:
-                            obtain_n[i] = len(neighbors_for_i)
                             new_neighborhood[i] = True
                             break
+                    obtain_n[i] = len(neighbors_for_i)
                     neighbors.extend(neighbors_for_i)
+            assert sum(n for i, n in enumerate(obtain_n) if active[i]) == len(neighbors)
 
             if len(neighbors) != 0:
                 start_time = time.time()
