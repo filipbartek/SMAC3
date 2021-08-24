@@ -4,10 +4,6 @@ import logging
 import sys
 import os
 import inspect
-import secrets
-
-import neptune.new as neptune
-from neptune.new.integrations.python_logger import NeptuneHandler
 
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))
 cmd_folder = os.path.realpath(os.path.join(cmd_folder, ".."))
@@ -18,17 +14,6 @@ from smac.smac_cli import SMACCLI
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-
-    if neptune.envs.CUSTOM_RUN_ID_ENV_NAME not in os.environ:
-        # We set the custom run ID environment variable so that the pSMAC instances spawned in Hydra mode contribute to the same run.
-        os.environ[neptune.envs.CUSTOM_RUN_ID_ENV_NAME] = secrets.token_hex(16)
-    logging.info('%s=%s' % (neptune.envs.CUSTOM_RUN_ID_ENV_NAME, os.environ[neptune.envs.CUSTOM_RUN_ID_ENV_NAME]))
-
-    run = neptune.init()
-    logging.getLogger().addHandler(NeptuneHandler(run=run))
-    run['env'] = os.environ
-    run['cmd_folder'] = cmd_folder
-    run['cwd'] = os.getcwd()
 
     smac = SMACCLI()
     smac.main_cli()

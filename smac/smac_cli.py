@@ -4,7 +4,9 @@ import logging
 import numpy as np
 import typing
 import math
+import secrets
 import neptune.new as neptune
+from neptune.new.integrations.python_logger import NeptuneHandler
 
 from smac.configspace import Configuration
 from smac.utils.io.cmd_reader import CMDReader
@@ -41,16 +43,26 @@ class SMACCLI(object):
 
     def main_cli(self, commandline_arguments: typing.Optional[typing.List[str]] = None) -> None:
         """Main function of SMAC for CLI interface"""
-        run = neptune.get_last_run()
-
         self.logger.info("SMAC call: %s" % (" ".join(sys.argv)))
-        run['argv'] = ' '.join(sys.argv)
 
         cmd_reader = CMDReader()
         kwargs = {}
         if commandline_arguments:
             kwargs['commandline_arguments'] = commandline_arguments
+
+        # This call aborts if --help is requested.
         main_args_, smac_args_, scen_args_ = cmd_reader.read_cmd(**kwargs)
+
+        if neptune.envs.CUSTOM_RUN_ID_ENV_NAME not in os.environ:
+            # We set the custom run ID environment variable so that the pSMAC instances spawned in Hydra mode contribute to the same run.
+            os.environ[neptune.envs.CUSTOM_RUN_ID_ENV_NAME] = secrets.token_hex(16)
+        logging.info('%s=%s' % (neptune.envs.CUSTOM_RUN_ID_ENV_NAME, os.environ[neptune.envs.CUSTOM_RUN_ID_ENV_NAME]))
+
+        run = neptune.init()
+        logging.getLogger().addHandler(NeptuneHandler(run=run))
+        run['env'] = os.environ
+        run['cwd'] = os.getcwd()
+        run['argv'] = ' '.join(sys.argv)
         run['args/main'] = vars(main_args_)
         run['args/smac'] = vars(smac_args_)
         run['args/scen'] = {k: format_value(k, v) for k, v in vars(scen_args_).items()}
