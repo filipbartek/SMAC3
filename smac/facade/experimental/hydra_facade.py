@@ -184,6 +184,7 @@ class Hydra(object):
                               tae_runner_kwargs=self._tae_kwargs)
         run['optimizer'] = object_to_dict(self)
         for i in range(self.n_iterations):
+            run['hydra/scenario_output_dir'].log(self.scenario.output_dir)
             run['hydra/output_dir'].log(self.output_dir)
             self.logger.info("=" * 120)
             self.logger.info("Hydra Iteration: %d", (i + 1))
