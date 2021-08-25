@@ -186,7 +186,10 @@ class SMACCLI(object):
                 n_optimizers=main_args_.hydra_n_optimizers,
                 n_incs=main_args_.hydra_incumbents_per_round,
             )
-        run['optimizer/output_dir'] = optimizer.output_dir
+        run['scenario'] = object_to_dict(scen)
+        for k in ('feature_fn', 'pcs_fn', 'test_inst_fn', 'train_inst_fn'):
+            run[f'scenario/{k}_file'].upload(getattr(scen, k))
+        run['optimizer'] = object_to_dict(optimizer)
         try:
             optimizer.optimize()
         except (TAEAbortException, FirstRunCrashedException) as err:
