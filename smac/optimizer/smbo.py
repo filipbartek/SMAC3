@@ -206,19 +206,22 @@ class SMBO(object):
         bo_iterations = 0
         while True:
             self.neptune_field('bo_iterations').log(bo_iterations)
-            self.neptune_field('initial_design_configs_count').log(len(self.initial_design_configs))
             if self.incumbent is not None:
-                self.neptune_field('inc/runs').log(len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)), bo_iterations)
+                self.neptune_field('inc/runs').log(
+                    len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)),
+                    bo_iterations)
                 self.neptune_field('inc/perf').log(self.runhistory.get_cost(self.incumbent), bo_iterations)
-            for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:
-                v = getattr(self.intensifier, k)
-                if k == 'current_challenger':
-                    if v is not None:
-                        for config_k, config_v in v.get_dictionary().items():
-                            self.neptune_field(f'intensifier/{k}/{config_k}').log(config_v, bo_iterations)
-                    continue
-                self.neptune_field(f'intensifier/{k}').log(v)
-            self.neptune_field('intensifier/to_run_count').log(len(self.intensifier.to_run))
+            if not self.running_psmac():
+                self.neptune_field('initial_design_configs_count').log(len(self.initial_design_configs))
+                for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:
+                    v = getattr(self.intensifier, k)
+                    if k == 'current_challenger':
+                        if v is not None:
+                            for config_k, config_v in v.get_dictionary().items():
+                                self.neptune_field(f'intensifier/{k}/{config_k}').log(config_v, bo_iterations)
+                        continue
+                    self.neptune_field(f'intensifier/{k}').log(v)
+                self.neptune_field('intensifier/to_run_count').log(len(self.intensifier.to_run))
             if self.scenario.shared_model:  # type: ignore[attr-defined] # noqa F821
                 pSMAC.read(run_history=self.runhistory,
                            output_dirs=self.scenario.input_psmac_dirs,  # type: ignore[attr-defined] # noqa F821
@@ -251,7 +254,8 @@ class SMBO(object):
                 time_spent = time_spent + (time.time() - start_time)
                 time_left = self._get_timebound_for_intensification(time_spent, update=True)
                 self.logger.debug('Updated intensification time bound from %f to %f', old_time_left, time_left)
-            self.neptune_field('intensification_time_bound').log(time_left)
+            if not self.running_psmac():
+                self.neptune_field('intensification_time_bound').log(time_left)
 
             # Skip starting new runs if the budget is now exhausted
             if self.stats.is_budget_exhausted():
@@ -300,12 +304,13 @@ class SMBO(object):
             else:
                 raise NotImplementedError("No other RunInfoIntent has been coded!")
             self.neptune_field('intent').log(intent)
-            for k, v in run_info._asdict().items():
-                if k == 'config':
-                    for config_k, config_v in v.get_dictionary().items():
-                        self.neptune_field(f'run_info/{k}/{config_k}').log(config_v)
-                    continue
-                self.neptune_field(f'run_info/{k}').log(v)
+            if not self.running_psmac():
+                for k, v in run_info._asdict().items():
+                    if k == 'config':
+                        for config_k, config_v in v.get_dictionary().items():
+                            self.neptune_field(f'run_info/{k}/{config_k}').log(config_v)
+                        continue
+                    self.neptune_field(f'run_info/{k}').log(v)
 
             # Check if there is any result, or else continue
             for run_info, result in self.tae_runner.get_finished_runs():
@@ -543,8 +548,8 @@ class SMBO(object):
 
     def neptune_field(self, path):
         namespace = None
-        if self.scenario.input_psmac_dirs is not None:
-            namespace = f'run/{self.num_run}'
+        if self.running_psmac():
+            namespace = self.scenario.output_dir_for_this_run
             path = f'{namespace}/{path}'
         try:
             run = neptune.get_last_run()
@@ -554,3 +559,6 @@ class SMBO(object):
                 monitoring_namespace = f'{namespace}/monitoring'
             run = neptune.init(monitoring_namespace=monitoring_namespace)
         return run[path]
+
+    def running_psmac(self):
+        return self.scenario.input_psmac_dirs is not None
