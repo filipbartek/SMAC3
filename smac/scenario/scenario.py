@@ -167,3 +167,8 @@ class Scenario(object):
     def write(self) -> None:
         """ Write scenario to self.output_dir/scenario.txt. """
         self.out_writer.write_scenario_file(self)
+
+    def normalize_cost(self, cost):
+        if self.run_obj == "runtime":
+            return cost / (self.cutoff * self.par_factor)
+        return cost

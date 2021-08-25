@@ -210,7 +210,9 @@ class SMBO(object):
                 self.neptune_field('inc/runs').log(
                     len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)),
                     bo_iterations)
-                self.neptune_field('inc/perf').log(self.runhistory.get_cost(self.incumbent), bo_iterations)
+                perf = self.runhistory.get_cost(self.incumbent)
+                self.neptune_field('inc/perf').log(perf, bo_iterations)
+                self.neptune_field('inc/perf_normalized').log(self.scenario.normalize_cost(perf), bo_iterations)
             if not self.running_psmac():
                 self.neptune_field('initial_design_configs_count').log(len(self.initial_design_configs))
                 for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:

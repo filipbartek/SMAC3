@@ -231,6 +231,7 @@ class Hydra(object):
 
             cur_portfolio_cost = self._update_portfolio(incs, config_cost_per_inst)
             run['hydra/cur_portfolio_cost'].log(cur_portfolio_cost)
+            run['hydra/cur_portfolio_cost_normalized'].log(self.scenario.normalize_cost(cur_portfolio_cost))
             if portfolio_cost <= cur_portfolio_cost:
                 self.logger.info("No further progress (%f) --- terminate hydra", portfolio_cost)
                 break
