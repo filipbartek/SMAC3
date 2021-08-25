@@ -219,6 +219,6 @@ class Stats(object):
         log_func("##########################################################")
 
     def log(self, neptune_field):
-        for k in ['submitted_ta_runs', 'finished_ta_runs', 'n_configs', 'wallclock_time_used', 'ta_time_used',
-                  'inc_changed', '_n_configs_per_intensify', '_n_calls_of_intensify', '_ema_n_configs_per_intensifiy']:
+        for k in ['submitted_ta_runs', 'finished_ta_runs', 'n_configs', 'ta_time_used', 'inc_changed',
+                  '_n_calls_of_intensify']:
             neptune_field(f'stats/{k}').log(getattr(self, k))
