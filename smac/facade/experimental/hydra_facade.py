@@ -27,6 +27,7 @@ from smac.runhistory.runhistory import RunHistory
 from smac.epm.util_funcs import get_rng
 from smac.utils.constants import MAXINT
 from smac.optimizer.pSMAC import read
+from smac.utils.neptune import object_to_dict
 
 __author__ = "Marius Lindauer"
 __copyright__ = "Copyright 2017, ML4AAD"
@@ -174,8 +175,6 @@ class Hydra(object):
             self.scenario.output_dir = os.path.join(self.top_dir, "psmac3-output_%s" % (
                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S_%f')))
             self.output_dir = create_output_directory(self.scenario, run_id=self.run_id, logger=self.logger)
-        run['hydra'] = {k: getattr(self, k) for k in
-                        ['incs_per_round', 'n_iterations', 'n_optimizers', 'run_id', 'top_dir']}
 
         scen = copy.deepcopy(self.scenario)
         scen.output_dir_for_this_run = None
@@ -183,6 +182,7 @@ class Hydra(object):
         # parent process SMAC only used for validation purposes
         self.solver = SMAC4AC(scenario=scen, tae_runner=self._tae, rng=self.rng, run_id=self.run_id, **self.kwargs,
                               tae_runner_kwargs=self._tae_kwargs)
+        run['optimizer'] = object_to_dict(self)
         for i in range(self.n_iterations):
             run['hydra/output_dir'].log(self.output_dir)
             self.logger.info("=" * 120)
