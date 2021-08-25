@@ -309,8 +309,9 @@ class SMBO(object):
             if not self.running_psmac():
                 for k, v in run_info._asdict().items():
                     if k == 'config':
-                        for config_k, config_v in v.get_dictionary().items():
-                            self.neptune_field(f'run_info/{k}/{config_k}').log(config_v)
+                        if v is not None:
+                            for config_k, config_v in v.get_dictionary().items():
+                                self.neptune_field(f'run_info/{k}/{config_k}').log(config_v, bo_iterations)
                         continue
                     self.neptune_field(f'run_info/{k}').log(v)
 
