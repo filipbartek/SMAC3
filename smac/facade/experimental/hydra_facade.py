@@ -188,7 +188,7 @@ class Hydra(object):
             run['hydra/output_dir'].log(self.output_dir)
             self.logger.info("=" * 120)
             self.logger.info("Hydra Iteration: %d", (i + 1))
-            run['hydra/iteration'].log(i + 1)
+            run['hydra/iteration'].log(i)
 
             if i == 0:
                 tae = self._tae
