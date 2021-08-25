@@ -3,7 +3,6 @@ import sys
 import logging
 import numpy as np
 import typing
-import math
 import secrets
 import neptune.new as neptune
 from neptune.new.integrations.python_logger import NeptuneHandler
