@@ -22,7 +22,7 @@ from smac.utils.merge_foreign_data import merge_foreign_data_from_file
 from smac.utils.io.traj_logging import TrajLogger
 from smac.tae import TAEAbortException, FirstRunCrashedException
 from smac.utils.io.output_directory import create_output_directory
-from smac.utils.neptune import configspace_to_dict
+from smac.utils.neptune import object_to_dict
 
 __author__ = "Marius Lindauer"
 __copyright__ = "Copyright 2015, ML4AAD"
@@ -65,7 +65,7 @@ class SMACCLI(object):
         run['argv'] = ' '.join(sys.argv)
         run['args/main'] = vars(main_args_)
         run['args/smac'] = vars(smac_args_)
-        run['args/scen'] = {k: format_value(k, v) for k, v in vars(scen_args_).items()}
+        run['args/scen'] = object_to_dict(scen_args_)
 
         root_logger = logging.getLogger()
         root_logger.setLevel(main_args_.verbose_level)
@@ -253,21 +253,3 @@ def cmd_line_call() -> None:
     """
     smac = SMACCLI()
     smac.main_cli()
-
-
-def format_value(k, v):
-    if k in ('train_insts', 'test_insts'):
-        assert all(len(r) == 1 for r in v)
-        return {
-            'n': len(v),
-            'commonpath': os.path.commonpath(r[0] for r in v)
-        }
-    if k == 'feature_dict':
-        return {'n': len(v)}
-    if k == 'features':
-        return v[0]
-    if k == 'cs':
-        return configspace_to_dict(v)
-    if k in ('algo_runs_timelimit', 'cutoff', 'memory_limit', 'ta_run_limit', 'wallclock_limit'):
-        return str(v)
-    return v
