@@ -269,6 +269,6 @@ def format_value(k, v):
         return v[0]
     if k == 'cs':
         return configspace_to_dict(v)
-    if isinstance(v, float) and not math.isfinite(v):
+    if k in ('algo_runs_timelimit', 'cutoff', 'memory_limit', 'ta_run_limit', 'wallclock_limit'):
         return str(v)
     return v
