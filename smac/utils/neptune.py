@@ -20,7 +20,7 @@ def format_value(k, v):
     if k == 'cs':
         return configspace_to_dict(v)
     if k in ('train_insts', 'test_insts', 'val_set'):
-        if isinstance(v[0], list):
+        if len(v) >= 1 and isinstance(v[0], list):
             assert all(isinstance(r, list) and len(r) == 1 for r in v)
             v = [r[0] for r in v]
         return {
