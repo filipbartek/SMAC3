@@ -459,10 +459,11 @@ class LocalSearch(AcquisitionFunctionMaximizer):
 
             t.update()
             t.set_postfix({
-                'candidates': len(candidates),
+                'candidates': num_candidates,
                 'active': np.count_nonzero(active),
-                'plateau': np.count_nonzero(n_no_plateau_walk),
-                'improved': np.count_nonzero(improved)
+                'plateau': sum(1 for i, x in enumerate(n_no_plateau_walk) if x > 0 and active[i]),
+                'improved': np.count_nonzero(improved),
+                'neighbors': len(neighbors)
             })
 
         self.logger.debug(
