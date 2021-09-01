@@ -371,6 +371,8 @@ class LocalSearch(AcquisitionFunctionMaximizer):
                             neighbors_generated[i] += 1
                             neighbors_for_i.append(n)
                         except ValueError as e:
+                            # `neighborhood_iterator` raises `ValueError` with some probability when it hits an invalid configuration.
+                            # We simply ignore this exception.
                             self.logger.debug(e)
                             new_neighborhood[i] = True
                         except StopIteration:
