@@ -2,6 +2,7 @@ import collections
 from enum import Enum
 import json
 import typing
+import warnings
 
 import numpy as np
 
@@ -538,11 +539,12 @@ class RunHistory(object):
 
         config_origins = all_data.get("config_origins", {})
 
-        self.ids_config = {
-            int(id_): Configuration(
-                cs, values=values, origin=config_origins.get(id_, None)
-            ) for id_, values in all_data["configs"].items()
-        }
+        self.ids_config = {}
+        for id_, values in all_data["configs"].items():
+            try:
+                self.ids_config[int(id_)] = Configuration(cs, values=values, origin=config_origins.get(id_, None))
+            except ValueError:
+                warnings.warn(f'Invalid configuration: {fn}:{id_}')
 
         self.config_ids = {config: id_ for id_, config in self.ids_config.items()}
 
@@ -550,16 +552,17 @@ class RunHistory(object):
 
         # important to use add method to use all data structure correctly
         for k, v in all_data["data"]:
-            self.add(config=self.ids_config[int(k[0])],
-                     cost=float(v[0]),
-                     time=float(v[1]),
-                     status=StatusType(v[2]),
-                     instance_id=k[1],
-                     seed=int(k[2]),
-                     budget=float(k[3]) if len(k) == 4 else 0,
-                     starttime=v[3],
-                     endtime=v[4],
-                     additional_info=v[5])
+            if int(k[0]) in self.ids_config:
+                self.add(config=self.ids_config[int(k[0])],
+                         cost=float(v[0]),
+                         time=float(v[1]),
+                         status=StatusType(v[2]),
+                         instance_id=k[1],
+                         seed=int(k[2]),
+                         budget=float(k[3]) if len(k) == 4 else 0,
+                         starttime=v[3],
+                         endtime=v[4],
+                         additional_info=v[5])
 
     def update_from_json(
         self,
