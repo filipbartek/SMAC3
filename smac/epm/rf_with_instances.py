@@ -2,6 +2,7 @@ import typing
 
 import numpy as np
 from pyrfr import regression
+from tqdm import tqdm
 
 from smac.configspace import ConfigurationSpace
 from smac.epm.base_rf import BaseModel
@@ -298,7 +299,7 @@ class RandomForestWithInstances(BaseModel):
         X = self._impute_inactive(X)
 
         dat_ = np.zeros((X.shape[0], self.rf_opts.num_trees))  # marginalized predictions for each tree
-        for i, x in enumerate(X):
+        for i, x in enumerate(tqdm(X, desc='Predicting performance', unit='configuration', disable=len(X) <= 1)):
 
             # marginalize over instances
             # 1. get all leaf values for each tree

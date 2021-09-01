@@ -4,6 +4,7 @@ import itertools
 import logging
 import time
 import numpy as np
+from tqdm import tqdm
 
 from typing import List, Union, Tuple, Optional, Set, Iterator, Callable
 
@@ -348,6 +349,7 @@ class LocalSearch(AcquisitionFunctionMaximizer):
         neighbors_w_equal_acq = [[] for _ in range(num_candidates)]  # type: List[List[Configuration]]
 
         num_iters = 0
+        t = tqdm(desc='Local search')
         while np.any(active):
 
             num_iters += 1
@@ -444,6 +446,14 @@ class LocalSearch(AcquisitionFunctionMaximizer):
                     neighborhood_iterators[i] = get_one_exchange_neighbourhood(
                         candidates[i], seed=self.rng.randint(low=0, high=100000),
                     )
+
+            t.update()
+            t.set_postfix({
+                'candidates': len(candidates),
+                'active': np.count_nonzero(active),
+                'plateau': np.count_nonzero(n_no_plateau_walk),
+                'improved': np.count_nonzero(improved)
+            })
 
         self.logger.debug(
             "Local searches took %s steps and looked at %s configurations. Computing the acquisition function in "
