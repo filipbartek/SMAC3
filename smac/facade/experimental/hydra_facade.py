@@ -7,6 +7,7 @@ import datetime
 import time
 import typing
 import copy
+import json
 from collections import defaultdict
 
 import pickle
@@ -215,23 +216,41 @@ class Hydra(object):
             )
             self.optimizer.output_dir = self.output_dir
             incs = self.optimizer.optimize()
-            run['hydra/incs/all'].log(incs)
+
+            def save_configs(incs, name):
+                # TODO: Save a Vampire call with each config.
+                base_path = f'{self.optimizer.scenario.output_dir}/hydra/configs/{name}'
+                run[f'{base_path}/pkl'] = neptune.types.File.as_pickle(incs)
+                fn = os.path.join(self.optimizer.scenario.output_dir, 'hydra', 'configs', f'{name}.json')
+                os.makedirs(os.path.dirname(fn), exist_ok=True)
+                with open(fn, "w") as fp:
+                    json.dump([conf.get_dictionary() for conf in incs], fp, indent=2)
+                run[f'{base_path}/json'] = neptune.types.File(fn)
+
+            save_configs(incs, 'incs_all')
+
             cost_per_conf_v, val_ids, cost_per_conf_e, est_ids = self.optimizer.get_best_incumbents_ids(incs)
             if self.val_set:
                 to_keep_ids = val_ids[:self.incs_per_round]
             else:
                 to_keep_ids = est_ids[:self.incs_per_round]
+            run['hydra/incs/to_keep_ids'].log(to_keep_ids)
             config_cost_per_inst = {}
             incs = [incs[i] for i in to_keep_ids]
-            run['hydra/incs/kept'].log(incs)
+            save_configs(incs, 'incs_kept')
             self.logger.info('Kept incumbents')
             for inc in incs:
                 self.logger.info(inc)
                 config_cost_per_inst[inc] = cost_per_conf_v[inc] if self.val_set else cost_per_conf_e[inc]
 
             cur_portfolio_cost = self._update_portfolio(incs, config_cost_per_inst)
-            run['hydra/cur_portfolio_cost'].log(cur_portfolio_cost)
-            run['hydra/cur_portfolio_cost_normalized'].log(self.scenario.normalize_cost(cur_portfolio_cost))
+            run['hydra/portfolio/cost'].log(cur_portfolio_cost)
+            run['hydra/portfolio/cost_normalized'].log(self.scenario.normalize_cost(cur_portfolio_cost))
+            costs = np.fromiter(self.cost_per_inst.values(), float)
+            run['hydra/portfolio/crashes'].log(np.count_nonzero(costs >= self.scenario.cost_for_crash))
+            if self.scenario.run_obj == 'runtime':
+                run['hydra/portfolio/timeouts'].log(np.count_nonzero(costs >= self.scenario.cutoff * self.scenario.par_factor))
+            save_configs(self.portfolio, 'portfolio')
             if portfolio_cost <= cur_portfolio_cost:
                 self.logger.info("No further progress (%f) --- terminate hydra", portfolio_cost)
                 break
