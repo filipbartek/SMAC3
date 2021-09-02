@@ -266,7 +266,7 @@ class Hydra(object):
         run['hydra/runhistory'].upload(os.path.join(self.top_dir, 'all_validated_runs_runhistory.json'))
         with open(os.path.join(self.top_dir, 'portfolio.pkl'), 'wb') as fh:
             pickle.dump(self.portfolio, fh)
-        run['hydra/portfolio/pkl'].upload(os.path.join(self.top_dir, 'portfolio.pkl'))
+        run['hydra/portfolio/portfolio.pkl'].upload(os.path.join(self.top_dir, 'portfolio.pkl'))
         self.logger.info("~" * 120)
         self.logger.info('Resulting Portfolio:')
         for configuration in self.portfolio:
