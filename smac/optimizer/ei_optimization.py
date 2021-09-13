@@ -13,8 +13,8 @@ from smac.configspace import (
     Configuration,
     ConfigurationSpace,
     convert_configurations_to_array,
+    ForbiddenValueError,
 )
-from smac.configspace import ForbiddenValueError
 from smac.runhistory.runhistory import RunHistory
 from smac.stats.stats import Stats
 from smac.optimizer.acquisition import AbstractAcquisitionFunction
@@ -371,8 +371,7 @@ class LocalSearch(AcquisitionFunctionMaximizer):
                             neighbors_generated[i] += 1
                             neighbors_for_i.append(n)
                         except ValueError as e:
-                            # `neighborhood_iterator` raises `ValueError` with some probability when it hits an invalid configuration.
-                            # We simply ignore this exception.
+                            # `neighborhood_iterator` raises `ValueError` with some probability when it reaches an invalid configuration.
                             self.logger.debug(e)
                             new_neighborhood[i] = True
                         except StopIteration:

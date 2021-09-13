@@ -3,6 +3,7 @@ from functools import partial
 from ConfigSpace import ConfigurationSpace, Configuration, Constant, \
     CategoricalHyperparameter, UniformFloatHyperparameter, \
     UniformIntegerHyperparameter, InCondition
+from ConfigSpace.exceptions import ForbiddenValueError
 from ConfigSpace.read_and_write import pcs, pcs_new, json
 from ConfigSpace.util import get_one_exchange_neighbourhood
 from ConfigSpace.exceptions import ForbiddenValueError
