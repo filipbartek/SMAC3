@@ -5,6 +5,8 @@ import numpy as np
 import time
 import typing
 
+from tqdm import tqdm
+
 from smac.callbacks import IncorporateRunResultCallback
 from smac.configspace import Configuration
 from smac.epm.rf_with_instances import RandomForestWithInstances
@@ -204,6 +206,7 @@ class SMBO(object):
 
         # Main BO loop
         bo_iterations = 0
+        t = tqdm(desc='Optimization')
         while True:
             self.neptune_field('bo_iterations').log(bo_iterations)
             if self.incumbent is not None:
@@ -362,6 +365,8 @@ class SMBO(object):
                 self.stats.print_stats(debug_out=True)
 
             bo_iterations += 1
+            t.update()
+        t.close()
 
         self.neptune_field('incumbent').assign(self.incumbent)
         return self.incumbent
