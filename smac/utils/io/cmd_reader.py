@@ -733,6 +733,18 @@ class CMDReader(object):
         scen_opts.add_argument("--initial-incumbent", "--initial_incumbent", dest='initial_incumbent',
                                default="DEFAULT", type=str, choices=['DEFAULT', 'RANDOM', 'LHD', 'SOBOL', 'FACTORIAL'],
                                help="[dev] DEFAULT is the default from the PCS.")
+        scen_opts.add_argument("--initial-configs", "--initial_configs",
+                               dest='initial_configs', default=None, type=int,
+                               help="Maximum number of initial design configurations. "
+                                    "Overrides `initial_configs_per_param` and `initial_configs_fraction`.")
+        scen_opts.add_argument("--initial-configs-per-param", "--initial_configs_per_param",
+                               dest='initial_configs_per_param', default=0, type=int,
+                               help="Maximum number of initial design configurations per parameter.")
+        scen_opts.add_argument("--initial-configs-fraction", "--initial_configs_fraction",
+                               dest='initial_configs_fraction',
+                               default=0.0, type=float,
+                               help="Maximum number of initial design configurations as a fraction of `ta_run_limit`. "
+                                    "Only active if `ta_run_limit` is finite.")
         scen_opts.add_argument("--paramfile", "--param-file", "--param_file", "--pcs-fn", "--pcs_fn", dest='pcs_fn',
                                type=str, action=ReadPCSFileAction,
                                help="[dev] Specifies the path to the "

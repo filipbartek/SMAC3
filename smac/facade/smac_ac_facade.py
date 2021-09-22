@@ -459,8 +459,9 @@ class SMAC4AC(object):
             'rng': rng,
             'ta_run_limit': scenario.ta_run_limit,  # type: ignore[attr-defined] # noqa F821
             'configs': initial_configurations,
-            'n_configs_x_params': 0,
-            'max_config_fracs': 0.0
+            'init_budget': scenario.initial_configs,
+            'n_configs_x_params': scenario.initial_configs_per_param,
+            'max_config_fracs': scenario.initial_configs_fraction
         }
         if initial_design_kwargs is not None:
             init_design_def_kwargs.update(initial_design_kwargs)
