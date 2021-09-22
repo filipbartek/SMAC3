@@ -524,7 +524,9 @@ class CMDReader(object):
 
         smac_opts.add_argument("--minr", "--minR", dest='minR',
                                default=1, type=int,
-                               help="[dev] Minimum number of calls per configuration.")
+                               help="[dev] Minimum number of calls per configuration. "
+                                    "The first incumbent is evaluated this many times before a challenger "
+                                    "is considered.")
         smac_opts.add_argument("--maxr", "--maxR", dest='maxR',
                                default=2000, type=int,
                                help="[dev] Maximum number of calls per configuration.")
