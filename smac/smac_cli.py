@@ -188,7 +188,9 @@ class SMACCLI(object):
             )
         run['scenario'] = object_to_dict(scen)
         for k in ('feature_fn', 'pcs_fn', 'test_inst_fn', 'train_inst_fn'):
-            run[f'scenario/{k}_file'].upload(getattr(scen, k))
+            v = getattr(scen, k)
+            if v is not None:
+                run[f'scenario/{k}_file'].upload(v)
         run['optimizer'] = object_to_dict(optimizer)
         try:
             optimizer.optimize()

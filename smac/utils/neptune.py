@@ -23,6 +23,11 @@ def format_value(k, v):
         if len(v) >= 1 and isinstance(v[0], list):
             assert all(isinstance(r, list) and len(r) == 1 for r in v)
             v = [r[0] for r in v]
+        if v == [None]:
+            return {
+                'n': 0,
+                'commonpath': None
+            }
         return {
             'n': len(v),
             'commonpath': os.path.commonpath(v)
