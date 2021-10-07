@@ -402,17 +402,6 @@ class Intensifier(AbstractRacer):
             # via _process_racer_results
             if len(self.to_run) == 0 or not is_there_time_due_to_adaptive_cap:
 
-                # If no more time, stage transition is a must
-                if not is_there_time_due_to_adaptive_cap:
-                    # Since the challenger fails to outperform the incumbent due to adaptive capping,
-                    # we discard all the forthcoming runs.
-                    self.to_run = []
-                    self.stage = IntensifierStage.RUN_INCUMBENT
-                    self.logger.debug(
-                        "Stop challenger itensification due "
-                        "to adaptive capping."
-                    )
-
                 # Nevertheless, if there are no more instances to run,
                 # we might need to comply with line 17 and keep running the
                 # same challenger. In this case, if there is not enough information
@@ -424,6 +413,18 @@ class Intensifier(AbstractRacer):
                     incumbent=incumbent,
                     run_history=run_history,
                 )
+
+                # If no more time, stage transition is a must
+                if not is_there_time_due_to_adaptive_cap:
+                    # Since the challenger fails to outperform the incumbent due to adaptive capping,
+                    # we discard all the forthcoming runs.
+                    self.continue_challenger = False
+                    self.to_run = []
+                    self.stage = IntensifierStage.RUN_INCUMBENT
+                    self.logger.debug(
+                        "Stop challenger itensification due "
+                        "to adaptive capping."
+                    )
 
                 # Request SMBO to skip this run. This function will
                 # be called again, after the _process_racer_results
