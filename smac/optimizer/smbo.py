@@ -209,16 +209,10 @@ class SMBO(object):
         t = tqdm(desc='Optimization')
         while True:
             self.neptune_field('bo_iterations').log(bo_iterations)
-            if self.incumbent is not None:
-                self.neptune_field('inc/runs').log(
-                    len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)),
-                    bo_iterations)
-                perf = self.runhistory.get_cost(self.incumbent)
-                self.neptune_field('inc/perf').log(perf, bo_iterations)
-                self.neptune_field('inc/perf_normalized').log(self.scenario.normalize_cost(perf), bo_iterations)
             if not self.running_psmac():
                 self.neptune_field('initial_design_configs_count').log(len(self.initial_design_configs))
-                for k in ['N', 'continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters', 'num_chall_run', 'num_run', 'stage']:
+                for k in ['continue_challenger', 'current_challenger', 'elapsed_time', 'iteration_done', 'n_iters',
+                          'num_chall_run', 'num_run']:
                     v = getattr(self.intensifier, k)
                     if k == 'current_challenger':
                         if v is not None:
@@ -308,7 +302,6 @@ class SMBO(object):
                 self.tae_runner.wait()
             else:
                 raise NotImplementedError("No other RunInfoIntent has been coded!")
-            self.neptune_field('intent').log(intent)
             if not self.running_psmac():
                 for k, v in run_info._asdict().items():
                     if k == 'config':
@@ -324,6 +317,36 @@ class SMBO(object):
                 # Add the results of the run to the run history
                 # Additionally check for new incumbent
                 self._incorporate_run_results(run_info, result, time_left)
+
+            stats = {
+                'inc/perf': self.runhistory.get_cost(self.incumbent),
+                'inc/perf_normalized': self.scenario.normalize_cost(self.runhistory.get_cost(self.incumbent)),
+                'inc/runs': len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)),
+                'inc/config_id': self.incumbent.config_id,
+                'inc/origin': self.incumbent.origin,
+                'chal/perf': self.runhistory.get_cost(self.intensifier.current_challenger),
+                'chal/perf_normalized': self.scenario.normalize_cost(
+                    self.runhistory.get_cost(self.intensifier.current_challenger)),
+                'chal/runs': len(self.runhistory.get_runs_for_config(self.intensifier.current_challenger,
+                                                                     only_max_observed_budget=True)),
+                'chal/config_id': self.intensifier.current_challenger.config_id,
+                'chal/origin': self.intensifier.current_challenger.origin,
+                'n_configs': self.stats.n_configs,
+                'inc_changed': self.stats.inc_changed,
+                'intensifier/N': self.intensifier.N,
+                'intensifier/to_run': len(self.intensifier.to_run),
+                'intensifier/stage': self.intensifier.stage.name,
+                'runhistory_size': len(self.runhistory.data),
+                'intent': intent.name,
+                'ta_runs/submitted': self.stats.submitted_ta_runs,
+                'ta_runs/finished': self.stats.finished_ta_runs
+            }
+
+            t.set_postfix({k: stats[k] for k in ['inc/perf', 'inc/runs', 'chal/perf', 'chal/runs', 'inc_changed',
+                                                 'intensifier/N', 'intensifier/to_run', 'intensifier/stage', 'intent']})
+
+            for k, v in stats.items():
+                self.neptune_field(k).log(v)
 
             if self.scenario.shared_model:  # type: ignore[attr-defined] # noqa F821
                 assert self.scenario.output_dir_for_this_run is not None  # please mypy
