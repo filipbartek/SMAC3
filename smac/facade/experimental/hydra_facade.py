@@ -265,7 +265,7 @@ class Hydra(object):
                 break
             else:
                 portfolio_cost = cur_portfolio_cost
-                self.logger.info("Current pertfolio cost: %f", portfolio_cost)
+                self.logger.info("Current portfolio cost: %f", portfolio_cost)
 
             self.scenario.output_dir = os.path.join(self.top_dir, "psmac3-output_%s" % (
                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S_%f')))
