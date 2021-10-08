@@ -5,7 +5,6 @@ import numpy as np
 import typing
 import secrets
 import neptune.new as neptune
-from neptune.new.integrations.python_logger import NeptuneHandler
 
 from smac.configspace import Configuration
 from smac.utils.io.cmd_reader import CMDReader
@@ -23,6 +22,7 @@ from smac.utils.io.traj_logging import TrajLogger
 from smac.tae import TAEAbortException, FirstRunCrashedException
 from smac.utils.io.output_directory import create_output_directory
 from smac.utils.neptune import object_to_dict
+import smac.utils.neptune as smac_neptune
 
 __author__ = "Marius Lindauer"
 __copyright__ = "Copyright 2015, ML4AAD"
@@ -58,8 +58,7 @@ class SMACCLI(object):
             os.environ[neptune.envs.CUSTOM_RUN_ID_ENV_NAME] = secrets.token_hex(16)
         logging.info('%s=%s' % (neptune.envs.CUSTOM_RUN_ID_ENV_NAME, os.environ[neptune.envs.CUSTOM_RUN_ID_ENV_NAME]))
 
-        run = neptune.init()
-        logging.getLogger().addHandler(NeptuneHandler(run=run))
+        run = smac_neptune.get_run('cli')
         run['env'] = os.environ
         run['cwd'] = os.getcwd()
         run['argv'] = ' '.join(sys.argv)

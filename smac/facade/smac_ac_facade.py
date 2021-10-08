@@ -101,6 +101,7 @@ class SMAC4AC(object):
                  random_configuration_chooser_kwargs: Optional[Dict] = None,
                  dask_client: Optional[dask.distributed.Client] = None,
                  n_jobs: Optional[int] = 1,
+                 neptune_run = None,
                  ):
         """
         Constructor
@@ -577,6 +578,7 @@ class SMAC4AC(object):
             'restore_incumbent': restore_incumbent,
             'random_configuration_chooser': random_configuration_chooser_instance,
             'tae_runner': tae_runner_instance,
+            'neptune_run': neptune_run,
         }  # type: Dict[str, Any]
 
         if smbo_class is None:

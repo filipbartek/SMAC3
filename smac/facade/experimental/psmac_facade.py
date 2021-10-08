@@ -21,6 +21,7 @@ from smac.utils.io.output_directory import create_output_directory
 from smac.runhistory.runhistory import RunHistory
 from smac.epm.util_funcs import get_rng
 from smac.utils.constants import MAXINT
+import smac.utils.neptune as smac_neptune
 
 __author__ = "Andre Biedenkapp"
 __copyright__ = "Copyright 2018, ML4AAD"
@@ -32,6 +33,7 @@ def optimize(scenario: typing.Type[Scenario],
              tae_kwargs: typing.Dict,
              rng: typing.Union[np.random.RandomState, int],
              output_dir: str,
+             neptune_namespace,
              **kwargs) -> Configuration:
     """
     Unbound method to be called in a subprocess
@@ -55,11 +57,13 @@ def optimize(scenario: typing.Type[Scenario],
         The incumbent configuration of this run
 
     """
-    solver = SMAC4AC(scenario=scenario, tae_runner=tae, tae_runner_kwargs=tae_kwargs, rng=rng, **kwargs)
+    neptune_run = smac_neptune.get_run(f'{neptune_namespace}/subprocess/{rng}', local_monitoring=True)
+    solver = SMAC4AC(scenario=scenario, tae_runner=tae, tae_runner_kwargs=tae_kwargs, rng=rng, neptune_run=neptune_run,
+                     **kwargs)
     solver.stats.start_timing()
     solver.stats.print_stats()
 
-    solver.solver.neptune_field('output_dir').assign(solver.output_dir)
+    neptune_run['output_dir'] = solver.output_dir
 
     incumbent = solver.solver.run()
     solver.stats.print_stats()
@@ -68,7 +72,7 @@ def optimize(scenario: typing.Type[Scenario],
         solver.solver.runhistory.save_json(
             fn=os.path.join(solver.output_dir, "runhistory.json")
         )
-        solver.solver.neptune_field('runhistory').upload(os.path.join(solver.output_dir, "runhistory.json"))
+        neptune_run['runhistory'].upload(os.path.join(solver.output_dir, "runhistory.json"))
     return incumbent
 
 
@@ -101,6 +105,7 @@ class PSMAC(object):
                  n_optimizers: int = 2,
                  val_set: typing.Union[typing.List[str], None] = None,
                  n_incs: int = 1,
+                 neptune_run = None,
                  **kwargs):
         """
         Constructor
@@ -146,6 +151,7 @@ class PSMAC(object):
         self.validate = validate
         self.shared_model = shared_model
         self.n_incs = min(max(1, n_incs), self.n_optimizers)
+        self.neptune_run = neptune_run
         if val_set is None:
             self.val_set = scenario.train_insts
         else:
@@ -186,6 +192,7 @@ class PSMAC(object):
                 self._tae_kwargs,
                 p,  # seed for the rng/run_id
                 self.output_dir,  # directory to create outputs in
+                self.neptune_run.namespace,
                 **self.kwargs
             ) for p in range(self.n_optimizers)
         )

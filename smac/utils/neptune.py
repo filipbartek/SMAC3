@@ -1,4 +1,8 @@
+import logging
 import os
+
+import neptune.new as neptune
+from neptune.new.integrations.python_logger import NeptuneHandler
 
 
 def object_to_dict(o):
@@ -50,3 +54,33 @@ def configspace_to_dict(cs):
     for k, v in list(result.items()):
         result[f'{k}_count'] = len(v)
     return result
+
+
+def get_run(namespace=None, local_monitoring=False, **kwargs):
+    try:
+        run = neptune.get_last_run()
+    except neptune.NeptuneUninitializedException:
+        if local_monitoring:
+            kwargs['monitoring_namespace'] = f'{namespace}/monitoring'
+        run = neptune.init(**kwargs)
+        logging.getLogger().addHandler(NeptuneHandler(run=run))
+    return Run(run, namespace=namespace)
+
+
+class Run:
+    def __init__(self, run, namespace=None):
+        self.run = run
+        self.namespace = namespace
+
+    def __getitem__(self, path):
+        if self.namespace is not None:
+            path = f'{self.namespace}/{path}'
+        return self.run[path]
+
+    def __setitem__(self, path, value):
+        if self.namespace is not None:
+            path = f'{self.namespace}/{path}'
+        self.run.__setitem__(path, value)
+
+    def child(self, namespace, **kwargs):
+        return get_run(f'{self.namespace}/{namespace}', **kwargs)

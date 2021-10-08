@@ -4,7 +4,6 @@ import os
 import time
 import typing
 
-import neptune.new as neptune
 import numpy as np
 
 from smac.scenario.scenario import Scenario
@@ -218,7 +217,7 @@ class Stats(object):
 
         log_func("##########################################################")
 
-    def log(self, neptune_field):
+    def log(self, run):
         for k in ['submitted_ta_runs', 'finished_ta_runs', 'n_configs', 'ta_time_used', 'inc_changed',
                   '_n_calls_of_intensify']:
-            neptune_field(f'stats/{k}').log(getattr(self, k))
+            run[f'stats/{k}'].log(getattr(self, k))
