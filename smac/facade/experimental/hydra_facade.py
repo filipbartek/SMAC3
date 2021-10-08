@@ -22,7 +22,6 @@ from smac.tae.base import BaseRunner
 from smac.tae.execute_ta_run_hydra import ExecuteTARunHydra
 from smac.tae.execute_ta_run_hydra import ExecuteTARunOld
 from smac.scenario.scenario import Scenario
-from smac.facade.smac_ac_facade import SMAC4AC
 from smac.facade.experimental.psmac_facade import PSMAC
 from smac.utils.io.output_directory import create_output_directory
 from smac.runhistory.runhistory import RunHistory
@@ -102,7 +101,6 @@ class Hydra(object):
         self.kwargs = kwargs
         self.output_dir = None
         self.top_dir = None
-        self.solver = None
         self.portfolio = None
         self.rh = RunHistory()
         self._tae = tae
@@ -182,9 +180,6 @@ class Hydra(object):
         scen = copy.deepcopy(self.scenario)
         scen.output_dir_for_this_run = None
         scen.output_dir = None
-        # parent process SMAC only used for validation purposes
-        self.solver = SMAC4AC(scenario=scen, tae_runner=self._tae, rng=self.rng, run_id=self.run_id, **self.kwargs,
-                              tae_runner_kwargs=self._tae_kwargs)
         run['optimizer'] = object_to_dict(self)
         for i in range(self.n_iterations):
             run_iteration = run.child(f'iteration/{i}')
