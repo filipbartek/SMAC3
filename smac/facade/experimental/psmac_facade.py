@@ -145,9 +145,9 @@ class PSMAC(object):
         self.rh = RunHistory()
         self._tae = tae
         self._tae_kwargs = tae_kwargs
-        if n_optimizers <= 1:
-            self.logger.warning('Invalid value in %s: %d. Setting to 2', 'n_optimizers', n_optimizers)
-        self.n_optimizers = max(n_optimizers, 2)
+        if n_optimizers <= 0:
+            self.logger.warning('Invalid value in %s: %d. Setting to 1', 'n_optimizers', n_optimizers)
+        self.n_optimizers = max(n_optimizers, 1)
         self.validate = validate
         self.shared_model = shared_model
         self.n_incs = min(max(1, n_incs), self.n_optimizers)
