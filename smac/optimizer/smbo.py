@@ -1,5 +1,6 @@
 import os
 import logging
+import math
 import numpy as np
 import time
 import typing
@@ -319,19 +320,18 @@ class SMBO(object):
                 # Additionally check for new incumbent
                 self._incorporate_run_results(run_info, result, time_left)
 
-            stats = {
-                'inc/perf': self.runhistory.get_cost(self.incumbent),
-                'inc/perf_normalized': self.scenario.normalize_cost(self.runhistory.get_cost(self.incumbent)),
-                'inc/runs': len(self.runhistory.get_runs_for_config(self.incumbent, only_max_observed_budget=True)),
-                'inc/config_id': self.incumbent.config_id,
-                'inc/origin': self.incumbent.origin,
-                'chal/perf': self.runhistory.get_cost(self.intensifier.current_challenger),
-                'chal/perf_normalized': self.scenario.normalize_cost(
-                    self.runhistory.get_cost(self.intensifier.current_challenger)),
-                'chal/runs': len(self.runhistory.get_runs_for_config(self.intensifier.current_challenger,
-                                                                     only_max_observed_budget=True)),
-                'chal/config_id': self.intensifier.current_challenger.config_id,
-                'chal/origin': self.intensifier.current_challenger.origin,
+            stats = {}
+            for name, config in {'inc': self.incumbent, 'chal': self.intensifier.current_challenger}.items():
+                perf = self.runhistory.get_cost(config)
+                config_stats = {
+                    'perf': perf,
+                    'perf_normalized': self.scenario.normalize_cost(perf),
+                    'runs': len(self.runhistory.get_runs_for_config(config, only_max_observed_budget=True)),
+                    'config_id': config.config_id if config is not None else None,
+                    'origin': config.origin if config is not None else None
+                }
+                stats.update({f'{name}/{k}': v for k, v in config_stats.items()})
+            stats.update({
                 'n_configs': self.stats.n_configs,
                 'inc_changed': self.stats.inc_changed,
                 'intensifier/N': self.intensifier.N,
@@ -341,13 +341,16 @@ class SMBO(object):
                 'intent': intent.name,
                 'ta_runs/submitted': self.stats.submitted_ta_runs,
                 'ta_runs/finished': self.stats.finished_ta_runs
-            }
+            })
 
             t.set_postfix({k: stats[k] for k in ['inc/perf', 'inc/runs', 'chal/perf', 'chal/runs', 'inc_changed',
                                                  'intensifier/N', 'intensifier/to_run', 'intensifier/stage', 'intent']})
 
             for k, v in stats.items():
-                if k == 'chal/config_id' and v is None:
+                if k in ['inc/perf', 'inc/perf_normalized', 'chal/perf', 'chal/perf_normalized'] and not math.isfinite(
+                        v):
+                    v = -1
+                if k in ['inc/config_id', 'chal/config_id'] and v is None:
                     v = -1
                 self.neptune_run[k].log(v)
 
