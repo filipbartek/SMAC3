@@ -107,14 +107,16 @@ if __name__ == "__main__":
         runhistory = None
 
     if args_.epm:
-        validator.validate_epm(config_mode=args_.configs,
-                               instance_mode=args_.instances,
-                               repetitions=args_.repetitions,
-                               runhistory=runhistory, output_fn=args_.output)
+        rh = validator.validate_epm(config_mode=args_.configs,
+                                    instance_mode=args_.instances,
+                                    repetitions=args_.repetitions,
+                                    runhistory=runhistory, output_fn=args_.output)
     else:
-        validator.validate(config_mode=args_.configs,
-                           instance_mode=args_.instances,
-                           repetitions=args_.repetitions,
-                           n_jobs=args_.n_jobs,
-                           runhistory=runhistory,
-                           tae=tae, output_fn=args_.output)
+        rh = validator.validate(config_mode=args_.configs,
+                                instance_mode=args_.instances,
+                                repetitions=args_.repetitions,
+                                n_jobs=args_.n_jobs,
+                                runhistory=runhistory,
+                                tae=tae, output_fn=args_.output)
+
+    rh.save_csv(args_.output, scenario)

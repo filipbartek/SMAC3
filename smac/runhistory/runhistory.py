@@ -1,10 +1,12 @@
 import collections
 from enum import Enum
 import json
+import os
 import typing
 import warnings
 
 import numpy as np
+import pandas as pd
 
 from smac.configspace import Configuration, ConfigurationSpace
 from smac.tae import StatusType
@@ -786,3 +788,71 @@ class RunHistory(object):
             cost_per_inst[inst].append(vkey.cost)
         cost_per_inst = dict([(inst, np.mean(costs)) for inst, costs in cost_per_inst.items()])
         return cost_per_inst
+
+    def save_csv(self, output_dir, scenario):
+        runs = self.get_dataframe_runs(scenario)
+        runs.to_csv(os.path.join(output_dir, 'runs.csv'), index=False)
+
+        configs_instances = self.get_dataframe_configs_instances(runs)
+        configs_instances.to_csv(os.path.join(output_dir, 'configs_instances.csv'))
+
+        configs = self.get_dataframe_configs(runs, configs_instances)
+        configs.to_csv(os.path.join(output_dir, 'configs.csv'))
+
+    def get_dataframe_runs(self, scenario):
+        def get_record(k, v):
+            record = {**k._asdict(), **v._asdict()}
+            if scenario is not None:
+                record['cost_rel'] = scenario.normalize_cost(v.cost)
+                if scenario.cutoff is not None:
+                    record['time_rel'] = v.time / scenario.cutoff
+            return record
+        return pd.DataFrame.from_records([get_record(k, v) for k, v in self.data.items()]).astype(
+            {
+                'config_id': pd.UInt32Dtype(),
+                'instance_id': 'object',
+                'seed': pd.UInt64Dtype(),
+                'status': 'category'
+            }, copy=False)
+
+    @classmethod
+    def get_dataframe_configs_instances(cls, runs):
+        grouped = runs.groupby(['config_id', 'instance_id'])
+        components = {
+            'count': grouped.size().rename('count'),
+            'cost': grouped.cost.mean(),
+            'cost_rel': grouped.cost_rel.mean(),
+            'status': grouped.status.value_counts().unstack(level=2).rename(lambda s: s.name, axis='columns')
+        }
+        components['status_rel'] = components['status'].divide(components['count'], axis='index')
+        return cls.concat(components)
+
+    def get_dataframe_configs(self, runs, configs_instances):
+        grouped = configs_instances.groupby('config_id')
+        grouped_runs = runs.groupby('config_id')
+        components = {
+            'origin': pd.Series({k: v.origin for k, v in self.ids_config.items()}, dtype='category'),
+            'count': grouped_runs.size().astype(pd.UInt32Dtype()),
+            'cost': grouped.cost.mean(),
+            'cost_per_run': grouped_runs.cost.mean(),
+            'cost_rel': grouped.cost_rel.mean(),
+            'cost_rel_per_run': grouped_runs.cost_rel.mean(),
+            'status': grouped_runs.status.value_counts().unstack(level=1).rename(lambda s: s.name, axis='columns'),
+            **{f'status_rel_{k.name}': grouped[f'status_rel_{k.name}'].mean() for k in runs.status.cat.categories}
+        }
+        components['status_rel_per_run'] = components['status'].divide(components['count'], axis='index')
+        # TODO: Add column: Number of unique successes.
+        components['config'] = pd.DataFrame.from_records((v.get_dictionary() for v in self.ids_config.values()), index=self.ids_config.keys())
+        df = self.concat(components)
+        df.index.name = 'config_id'
+        return df
+
+    @staticmethod
+    def concat(components, separator='_'):
+        keys = []
+        for k, v in components.items():
+            if isinstance(v, pd.DataFrame):
+                keys.extend(f'{k}{separator}{c}' for c in v.columns)
+            else:
+                keys.append(k)
+        return pd.concat(components.values(), axis='columns', ignore_index=True).rename(columns=dict(enumerate(keys)))
