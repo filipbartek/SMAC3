@@ -80,7 +80,8 @@ class Validator(object):
 
     def __init__(self,
                  scenario: Scenario,
-                 trajectory: typing.Optional[typing.List],
+                 portfolio: typing.Optional[typing.List[Configuration]] = None,
+                 trajectory: typing.Optional[typing.List] = None,
                  rng: Union[np.random.RandomState, int, None] = None) -> None:
         """
         Construct Validator for given scenario and trajectory.
@@ -89,6 +90,8 @@ class Validator(object):
         ----------
         scenario: Scenario
             scenario object for cutoff, instances, features and specifics
+        portfolio: config-list
+            configs to evaluate
         trajectory: trajectory-list
             trajectory to take incumbent(s) from
         rng: np.random.RandomState or int
@@ -97,6 +100,7 @@ class Validator(object):
         self.logger = logging.getLogger(
             self.__module__ + "." + self.__class__.__name__)
 
+        self.portfolio = portfolio
         self.traj = trajectory
         self.scen = scenario
         self.epm = None  # type: typing.Optional[RandomForestWithInstances]
@@ -595,10 +599,9 @@ class Validator(object):
 
         # Get trajectory and make sure it's not None to please mypy
         traj = self.traj
-        assert traj is not None  # please mypy
 
         # Add desired configs
-        configs = []
+        configs = self.portfolio.copy()
         mode = mode.lower()
         if mode not in ['def', 'inc', 'def+inc', 'wallclock_time', 'cpu_time',
                         'all']:
@@ -606,28 +609,29 @@ class Validator(object):
                              % mode)
         if mode == "def" or mode == "def+inc":
             configs.append(self.scen.cs.get_default_configuration())  # type: ignore[attr-defined] # noqa F821
-        if mode == "inc" or mode == "def+inc":
-            configs.append(traj[-1]["incumbent"])
-        if mode in ["wallclock_time", "cpu_time"]:
-            # get highest time-entry and add entries from there
-            # not using wallclock_limit in case it's inf
-            if (mode == "wallclock_time" and np.isfinite(self.scen.wallclock_limit)):
-                max_time = self.scen.wallclock_limit
-            elif (mode == "cpu_time" and np.isfinite(self.scen.algo_runs_timelimit)):
-                max_time = self.scen.algo_runs_timelimit
-            else:
-                max_time = traj[-1][mode]
-            counter = 2 ** 0
-            for entry in traj[::-1]:
-                if (entry[mode] <= max_time / counter and entry["incumbent"] not in configs):
-                    configs.append(entry["incumbent"])
-                    counter *= 2
-            if not traj[0]["incumbent"] in configs:
-                configs.append(traj[0]["incumbent"])  # add first
-        if mode == "all":
-            for entry in traj:
-                if not entry["incumbent"] in configs:
-                    configs.append(entry["incumbent"])
+        if traj is not None:
+            if mode == "inc" or mode == "def+inc":
+                configs.append(traj[-1]["incumbent"])
+            if mode in ["wallclock_time", "cpu_time"]:
+                # get highest time-entry and add entries from there
+                # not using wallclock_limit in case it's inf
+                if (mode == "wallclock_time" and np.isfinite(self.scen.wallclock_limit)):
+                    max_time = self.scen.wallclock_limit
+                elif (mode == "cpu_time" and np.isfinite(self.scen.algo_runs_timelimit)):
+                    max_time = self.scen.algo_runs_timelimit
+                else:
+                    max_time = traj[-1][mode]
+                counter = 2 ** 0
+                for entry in traj[::-1]:
+                    if (entry[mode] <= max_time / counter and entry["incumbent"] not in configs):
+                        configs.append(entry["incumbent"])
+                        counter *= 2
+                if not traj[0]["incumbent"] in configs:
+                    configs.append(traj[0]["incumbent"])  # add first
+            if mode == "all":
+                for entry in traj:
+                    if not entry["incumbent"] in configs:
+                        configs.append(entry["incumbent"])
         self.logger.debug("Gathered %d configurations for mode %s.",
                           len(configs), mode)
         return configs

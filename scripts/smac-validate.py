@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+import json
 import logging
 import sys
 import os
@@ -11,6 +12,7 @@ cmd_folder = os.path.realpath(os.path.join(cmd_folder, ".."))
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
+from smac.configspace import Configuration
 from smac.runhistory.runhistory import RunHistory
 from smac.scenario.scenario import Scenario
 from smac.stats.stats import Stats
@@ -28,8 +30,10 @@ if __name__ == "__main__":
     req_opts = parser.add_argument_group("Required Options")
     req_opts.add_argument("--scenario", required=True,
                           help="path to SMAC scenario")
-    req_opts.add_argument("--trajectory", required=True,
+    req_opts.add_argument("--trajectory",
                           help="path to SMAC trajectory")
+    req_opts.add_argument("--portfolio",
+                          help="path to portfolio (a JSON-formatted list of configurations)")
     req_opts.add_argument("--output", required=True,
                           help="path to save runhistory to")
 
@@ -80,8 +84,17 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.DEBUG)
 
     scenario = Scenario(args_.scenario, cmd_options={'output_dir': ""})
-    traj_logger = TrajLogger(None, Stats(scenario))
-    trajectory = traj_logger.read_traj_aclib_format(args_.trajectory, scenario.cs)
+    trajectory = None
+    if args_.trajectory is not None:
+        traj_logger = TrajLogger(None, Stats(scenario))
+        trajectory = traj_logger.read_traj_aclib_format(args_.trajectory, scenario.cs)
+
+    portfolio = None
+    if args_.portfolio is not None:
+        with open(args_.portfolio) as fp:
+            portfolio = json.load(fp)
+        portfolio = [Configuration(configuration_space=scenario.cs, values=c) for c in portfolio]
+
     stats = Stats(scenario)
     if args_.tae == "old":
         tae = ExecuteTARunOld(ta=scenario.ta,
@@ -96,7 +109,7 @@ if __name__ == "__main__":
                                 par_factor=scenario.par_factor,
                                 cost_for_crash=scenario.cost_for_crash)
 
-    validator = Validator(scenario, trajectory, args_.seed)
+    validator = Validator(scenario, portfolio, trajectory, args_.seed)
 
     # Load runhistory
     if args_.runhistory:
