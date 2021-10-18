@@ -261,7 +261,7 @@ class TrajLogger(object):
         fn: str
             Filename with saved runhistory in self._add_in_aclib_format format
         cs: ConfigurationSpace
-            Configuration Space to translate dict object into Confiuration object
+            Configuration Space to translate dict object into Configuration object
 
         Returns
         -------
