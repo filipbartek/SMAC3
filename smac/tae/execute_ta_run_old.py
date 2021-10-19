@@ -78,7 +78,7 @@ class ExecuteTARunOld(SerialRunner):
             if line.startswith("Result of this algorithm run:") or \
                     line.startswith("Result for ParamILS") or \
                     line.startswith("Result for SMAC"):
-                fields = line.split(":", 1)[1].split(",")
+                fields = line.split(":", 1)[1].split(",", 5)
                 fields = list(map(lambda x: x.strip(" "), fields))
                 if len(fields) == 5:
                     status_string, runtime_string, _, quality_string, _ = fields
