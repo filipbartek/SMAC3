@@ -799,6 +799,9 @@ class RunHistory(object):
         configs = self.get_dataframe_configs(runs, configs_instances)
         configs.to_csv(os.path.join(output_dir, 'configs.csv'))
 
+        instances = self.get_dataframe_instances(runs, configs_instances)
+        instances.to_csv(os.path.join(output_dir, 'instances.csv'))
+
     def get_dataframe_runs(self, scenario):
         def get_record(k, v):
             record = {**k._asdict(), **v._asdict()}
@@ -845,6 +848,21 @@ class RunHistory(object):
         components['config'] = pd.DataFrame.from_records((v.get_dictionary() for v in self.ids_config.values()), index=self.ids_config.keys())
         df = self.concat(components)
         df.index.name = 'config_id'
+        return df
+
+    @classmethod
+    def get_dataframe_instances(cls, runs, configs_instances):
+        grouped = configs_instances.groupby('instance_id')
+        grouped_runs = runs.groupby('instance_id')
+        components = {
+            'runs': grouped_runs.size().astype(pd.UInt32Dtype()),
+            'configs': grouped.size().astype(pd.UInt32Dtype()),
+            'cost': grouped.cost.min(),
+            'cost_rel': grouped.cost_rel.min(),
+            'status': grouped_runs.status.value_counts().unstack(level=1).rename(lambda s: s.name, axis='columns')
+        }
+        df = cls.concat(components)
+        df.index.name = 'instance_id'
         return df
 
     @staticmethod
