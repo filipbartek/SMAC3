@@ -278,16 +278,16 @@ class TrajLogger(object):
 
         trajectory = []
         with open(fn) as fp:
-            for line in fp:
+            for config_id, line in enumerate(fp):
                 entry = json.loads(line)
                 entry["incumbent"] = TrajLogger._convert_dict_to_config(
-                    entry["incumbent"], cs=cs)
+                    entry["incumbent"], cs=cs, config_id=config_id)
                 trajectory.append(entry)
 
         return trajectory
 
     @staticmethod
-    def _convert_dict_to_config(config_list: typing.List[str], cs: ConfigurationSpace) -> Configuration:
+    def _convert_dict_to_config(config_list: typing.List[str], cs: ConfigurationSpace, config_id: int) -> Configuration:
         """Since we save a configurations in a dictionary str->str we have to
         try to figure out the type (int, float, str) of each parameter value
 
@@ -336,7 +336,7 @@ class TrajLogger(object):
 
             config_dict[k] = v
 
-        config = Configuration(configuration_space=cs, values=config_dict)
+        config = Configuration(configuration_space=cs, values=config_dict, config_id=config_id)
         config.origin = "External Trajectory"
 
         return config

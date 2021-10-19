@@ -93,7 +93,8 @@ if __name__ == "__main__":
     if args_.portfolio is not None:
         with open(args_.portfolio) as fp:
             portfolio = json.load(fp)
-        portfolio = [Configuration(configuration_space=scenario.cs, values=c) for c in portfolio]
+        portfolio = [Configuration(configuration_space=scenario.cs, values=c, origin="Portfolio", config_id=i) for i, c
+                     in enumerate(portfolio)]
 
     stats = Stats(scenario)
     if args_.tae == "old":

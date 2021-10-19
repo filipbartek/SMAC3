@@ -3,6 +3,7 @@ import math
 import time
 import traceback
 import typing
+import warnings
 
 import numpy as np
 
@@ -222,6 +223,8 @@ class BaseRunner(ABC):
                 instance_specific=run_info.instance_specific
             )
         except Exception as e:
+            config = run_info.config
+            warnings.warn(f'Run raised an exception. Config ID: {config.config_id}. Config origin: {config.origin}. Instance: {run_info.instance}. Exception: {e}')
             status = StatusType.CRASHED
             cost = self.cost_for_crash
             runtime = time.time() - start
