@@ -796,7 +796,10 @@ class RunHistory(object):
         configs_instances = self.get_dataframe_configs_instances(runs)
         configs_instances.to_csv(os.path.join(output_dir, 'configs_instances.csv'))
 
-        configs = self.get_dataframe_configs(runs, configs_instances)
+        configs_data = self.evaluate_config_instance_pairs(configs_instances, runs.status.cat.categories,
+                                                           os.path.join(output_dir, 'instance_config'))
+
+        configs = self.get_dataframe_configs(runs, configs_instances, configs_data)
         configs.to_csv(os.path.join(output_dir, 'configs.csv'))
 
         instances = self.get_dataframe_instances(runs, configs_instances)
@@ -830,12 +833,65 @@ class RunHistory(object):
         components['status_rel'] = components['status'].divide(components['count'], axis='index')
         return cls.concat(components)
 
-    def get_dataframe_configs(self, runs, configs_instances):
+    @classmethod
+    def evaluate_config_instance_pairs(cls, configs_instances, statuses, output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+        configs_instances.cost.unstack(level=0).to_csv(os.path.join(output_dir, 'cost.csv'))
+        configs_data = {}
+        for status in statuses:
+            df = configs_instances[f'status_rel_{status.name}'].unstack(level=0)
+            df.to_csv(os.path.join(output_dir, f'status_{status.name}.csv'))
+            if status == StatusType.SUCCESS:
+                # We assume that if a config solves an instance at least 50 % of the time, it solves it reliably.
+                df_bool = df >= 0.5
+                configs_data['unique_global'] = cls.get_unique_global(df_bool)
+                configs_data['unique_incremental'] = cls.get_unique_incremental(df_bool)
+                ranks = pd.Series(pd.NA, index=df.columns, dtype=pd.UInt32Dtype())
+                counts = pd.Series(pd.NA, index=df.columns, dtype=pd.UInt32Dtype())
+                for rank, (config_id, count) in enumerate(cls.get_unique_greedy(df_bool).items()):
+                    ranks[config_id] = rank
+                    counts[config_id] = count
+                configs_data['unique_greedy_rank'] = ranks
+                configs_data['unique_greedy_count'] = counts
+        return configs_data
+
+    @staticmethod
+    def get_unique_global(df):
+        def g(config_id):
+            this = df[config_id]
+            others = (df.drop(columns=config_id)).max(axis='columns')
+            return (this & ~others).sum()
+
+        return pd.Series({k: g(k) for k in df}, dtype=pd.UInt32Dtype())
+
+    @staticmethod
+    def get_unique_incremental(df):
+        result = pd.Series(pd.NA, index=df.columns, dtype=pd.UInt32Dtype())
+        df = df.copy()
+        for config_id in df:
+            this = df[config_id]
+            result[config_id] = this.sum()
+            df = df[~this]
+        return result
+
+    @staticmethod
+    def get_unique_greedy(df):
+        result = {}
+        df = df.copy()
+        while len(df) > 0 and df.max().max():
+            config_id = df.sum(axis='rows').idxmax()
+            this = df[config_id]
+            result[config_id] = this.sum()
+            df = df[~this]
+        return result
+
+    def get_dataframe_configs(self, runs, configs_instances, extra_components=None):
         grouped = configs_instances.groupby('config_id')
         grouped_runs = runs.groupby('config_id')
         components = {
             'origin': pd.Series({k: v.origin for k, v in self.ids_config.items()}, dtype='category'),
-            'count': grouped_runs.size().astype(pd.UInt32Dtype()),
+            'runs': grouped_runs.size().astype(pd.UInt32Dtype()),
+            'instances': grouped.size().astype(pd.UInt32Dtype()),
             'cost': grouped.cost.mean(),
             'cost_per_run': grouped_runs.cost.mean(),
             'cost_rel': grouped.cost_rel.mean(),
@@ -843,9 +899,11 @@ class RunHistory(object):
             'status': grouped_runs.status.value_counts().unstack(level=1).rename(lambda s: s.name, axis='columns'),
             **{f'status_rel_{k.name}': grouped[f'status_rel_{k.name}'].mean() for k in runs.status.cat.categories}
         }
-        components['status_rel_per_run'] = components['status'].divide(components['count'], axis='index')
-        # TODO: Add column: Number of unique successes.
-        components['config'] = pd.DataFrame.from_records((v.get_dictionary() for v in self.ids_config.values()), index=self.ids_config.keys())
+        components['status_rel_per_run'] = components['status'].divide(components['runs'], axis='index')
+        if extra_components is not None:
+            components.update(extra_components)
+        components['config'] = pd.DataFrame.from_records((v.get_dictionary() for v in self.ids_config.values()),
+                                                         index=self.ids_config.keys())
         df = self.concat(components)
         df.index.name = 'config_id'
         return df
