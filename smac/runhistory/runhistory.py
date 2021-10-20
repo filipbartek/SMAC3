@@ -790,10 +790,13 @@ class RunHistory(object):
         return cost_per_inst
 
     def save_csv(self, output_dir, scenario):
+        self.logger.info(f'Saving runhistory statistics in {output_dir}')
         runs = self.get_dataframe_runs(scenario)
         runs.to_csv(os.path.join(output_dir, 'runs.csv'), index=False)
 
+        self.logger.info('Statistics of combinations of configuration and instance - computing...')
         configs_instances = self.get_dataframe_configs_instances(runs)
+        self.logger.info('Statistics of combinations of configuration and instance - done.')
         configs_instances.to_csv(os.path.join(output_dir, 'configs_instances.csv'))
 
         configs_data = self.evaluate_config_instance_pairs(configs_instances, runs.status.cat.categories,
@@ -802,7 +805,9 @@ class RunHistory(object):
         configs = self.get_dataframe_configs(runs, configs_instances, configs_data)
         configs.to_csv(os.path.join(output_dir, 'configs.csv'))
 
+        self.logger.info('Statistics of instances - computing...')
         instances = self.get_dataframe_instances(runs, configs_instances)
+        self.logger.info('Statistics of instances - done.')
         instances.to_csv(os.path.join(output_dir, 'instances.csv'))
 
     def get_dataframe_runs(self, scenario):
