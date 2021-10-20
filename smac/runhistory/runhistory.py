@@ -859,8 +859,11 @@ class RunHistory(object):
     def get_unique_global(df):
         def g(config_id):
             this = df[config_id]
-            others = (df.drop(columns=config_id)).max(axis='columns')
-            return (this & ~others).sum()
+            if df.shape[1] > 1:
+                others = (df.drop(columns=config_id)).max(axis='columns')
+                return (this & ~others).sum()
+            else:
+                return this.sum()
 
         return pd.Series({k: g(k) for k in df}, dtype=pd.UInt32Dtype())
 
