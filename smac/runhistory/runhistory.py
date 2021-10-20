@@ -818,6 +818,7 @@ class RunHistory(object):
                 if scenario.cutoff is not None:
                     record['time_rel'] = v.time / scenario.cutoff
             return record
+
         return pd.DataFrame.from_records([get_record(k, v) for k, v in self.data.items()]).astype(
             {
                 'config_id': pd.UInt32Dtype(),
