@@ -789,7 +789,7 @@ class RunHistory(object):
         cost_per_inst = dict([(inst, np.mean(costs)) for inst, costs in cost_per_inst.items()])
         return cost_per_inst
 
-    def save_csv(self, output_dir, scenario):
+    def save_statistics(self, output_dir, scenario):
         self.logger.info(f'Saving runhistory statistics in {output_dir}')
         runs = self.get_dataframe_runs(scenario)
         runs.to_csv(os.path.join(output_dir, 'runs.csv'), index=False)

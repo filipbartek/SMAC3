@@ -133,4 +133,4 @@ if __name__ == "__main__":
                                 runhistory=runhistory,
                                 tae=tae, output_fn=args_.output)
 
-    rh.save_csv(args_.output, scenario)
+    rh.save_statistics(args_.output, scenario)
