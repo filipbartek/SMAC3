@@ -39,6 +39,8 @@ def format_value(k, v):
     if k == 'feature_dict':
         return {'n': len(v)}
     if k == 'feature_array':
+        if v is None:
+            return {'shape': None}
         return {'shape': v.shape}
     return v
 
