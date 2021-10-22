@@ -62,18 +62,8 @@ def optimize(scenario: typing.Type[Scenario],
                      **kwargs)
     solver.stats.start_timing()
     solver.stats.print_stats()
-
     neptune_run['output_dir'] = solver.output_dir
-
-    incumbent = solver.solver.run()
-    solver.stats.print_stats()
-
-    if output_dir is not None:
-        solver.solver.runhistory.save_json(
-            fn=os.path.join(solver.output_dir, "runhistory.json")
-        )
-        neptune_run['runhistory'].upload(os.path.join(solver.output_dir, "runhistory.json"))
-    return incumbent
+    return solver.optimize()
 
 
 class PSMAC(object):

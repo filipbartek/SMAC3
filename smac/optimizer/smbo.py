@@ -587,3 +587,4 @@ class SMBO(object):
             self.runhistory.save_json(
                 fn=os.path.join(output_dir, "runhistory.json")
             )
+            self.neptune_run['runhistory'].upload(os.path.join(output_dir, "runhistory.json"))
