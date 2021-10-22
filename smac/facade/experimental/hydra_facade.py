@@ -217,7 +217,6 @@ class Hydra(object):
             incs = self.optimizer.optimize()
 
             def save_configs(incs, name):
-                # TODO: Save a Vampire call with each config.
                 run_iteration_configs = run_iteration.child(f'configs/{name}')
                 run_iteration_configs['pkl'] = neptune.types.File.as_pickle(incs)
 
