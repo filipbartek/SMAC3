@@ -57,6 +57,13 @@ def optimize(scenario: typing.Type[Scenario],
         The incumbent configuration of this run
 
     """
+    # This function may be called in a separate process. If that is the case, it is useful to configure logging.
+    # Format inspiration:
+    # - https://docs.python.org/3/library/multiprocessing.html#multiprocessing.log_to_stderr
+    # - https://docs.python.org/3/library/logging.html#logrecord-attributes
+    logging.basicConfig(level=logging.INFO,
+                        format='[%(levelname)s/%(processName)s/%(asctime)s/%(name)s] %(message)s',
+                        datefmt='%Y-%m-%dT%H:%M:%S')
     neptune_run = smac_neptune.get_run(f'{neptune_namespace}/subprocess/{rng}', local_monitoring=True)
     solver = SMAC4AC(scenario=scenario, tae_runner=tae, tae_runner_kwargs=tae_kwargs, rng=rng, neptune_run=neptune_run,
                      **kwargs)
