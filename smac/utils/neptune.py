@@ -64,7 +64,7 @@ def get_run(namespace=None, local_monitoring=False, **kwargs):
     except neptune.NeptuneUninitializedException:
         if local_monitoring:
             kwargs['monitoring_namespace'] = f'{namespace}/monitoring'
-        run = neptune.init(**kwargs)
+        run = neptune.init(source_files='**/*.py', **kwargs)
         logging.getLogger().addHandler(NeptuneHandler(run=run))
     return Run(run, namespace=namespace)
 
