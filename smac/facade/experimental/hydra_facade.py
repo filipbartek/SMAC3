@@ -60,6 +60,7 @@ class Hydra(object):
                  val_set: str = 'train',
                  incs_per_round: int = 1,
                  n_optimizers: int = 1,
+                 n_validators: int = 1,
                  rng: typing.Optional[typing.Union[np.random.RandomState, int]] = None,
                  run_id: int = 1,
                  tae: typing.Type[BaseRunner] = ExecuteTARunOld,
@@ -82,6 +83,8 @@ class Hydra(object):
             Number of incumbents to keep per round
         n_optimizers: int
             Number of optimizers to run in parallel per round
+        n_validators: int
+            Number of validators to run in parallel
         rng: int/np.random.RandomState
             The randomState/seed to pass to each smac run
         run_id: int
@@ -111,6 +114,7 @@ class Hydra(object):
         if n_optimizers <= 0:
             self.logger.warning('Invalid value in %s: %d. Setting to 1', 'n_optimizers', n_optimizers)
         self.n_optimizers = max(n_optimizers, 1)
+        self.n_validators = max(n_validators, 1)
         self.val_set = self._get_validation_set(val_set)
         self.cost_per_inst = {}
         self.optimizer = None
@@ -208,6 +212,7 @@ class Hydra(object):
                 shared_model=False,
                 validate=True if self.val_set else False,
                 n_optimizers=self.n_optimizers,
+                n_validators=self.n_validators,
                 val_set=self.val_set,
                 n_incs=self.n_optimizers,  # return all configurations (unvalidated)
                 neptune_run=run_iteration,

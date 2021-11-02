@@ -500,6 +500,10 @@ class CMDReader(object):
                               type=int,
                               help="[dev] number of optimizers to run in parallel per psmac/hydra iteration.",
                               dest="hydra_n_optimizers")
+        req_opts.add_argument("--n_validators",
+                              type=int,
+                              help="[dev] number of validators to run in parallel for validation in each psmac/hydra iteration.",
+                              dest="hydra_n_validators")
         req_opts.add_argument("--psmac_validate",
                               default=False, type=truthy,
                               help="[dev] Validate all psmac configurations.")
@@ -767,6 +771,8 @@ class CMDReader(object):
     def parse_main_command(self, main_cmd_opts: typing.Sequence[str]) -> typing.Tuple[Namespace, typing.List[str]]:
         """Parse main options"""
         args_, misc = self.parser.parse_known_args(main_cmd_opts)
+        if args_.hydra_n_validators is None:
+            args_.hydra_n_validators = args_.hydra_n_optimizers
         try:
             misc.remove(self.parser.prog)
         except ValueError:

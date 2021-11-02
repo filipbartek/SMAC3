@@ -174,7 +174,8 @@ class SMACCLI(object):
                 n_iterations=main_args_.hydra_iterations,
                 val_set=main_args_.hydra_validation,
                 incs_per_round=main_args_.hydra_incumbents_per_round,
-                n_optimizers=main_args_.hydra_n_optimizers)
+                n_optimizers=main_args_.hydra_n_optimizers,
+                n_validators=main_args_.hydra_n_validators)
         elif main_args_.mode == "PSMAC":
             optimizer = PSMAC(
                 scenario=scen,
@@ -183,6 +184,7 @@ class SMACCLI(object):
                 shared_model=smac_args_.shared_model,
                 validate=main_args_.psmac_validate,
                 n_optimizers=main_args_.hydra_n_optimizers,
+                n_validators=main_args_.hydra_n_validators,
                 n_incs=main_args_.hydra_incumbents_per_round,
             )
         run['scenario'] = object_to_dict(scen)

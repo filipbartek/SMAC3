@@ -100,6 +100,7 @@ class PSMAC(object):
                  shared_model: bool = True,
                  validate: bool = True,
                  n_optimizers: int = 2,
+                 n_validators: int = 1,
                  val_set: typing.Union[typing.List[str], None] = None,
                  n_incs: int = 1,
                  neptune_run = None,
@@ -113,6 +114,8 @@ class PSMAC(object):
             Scenario object
         n_optimizers: int
             Number of optimizers to run in parallel per round
+        n_validators: int
+            Number of validators to run in parallel
         rng: int/np.random.RandomState
             The randomState/seed to pass to each smac run
         run_id: int
@@ -145,6 +148,7 @@ class PSMAC(object):
         if n_optimizers <= 0:
             self.logger.warning('Invalid value in %s: %d. Setting to 1', 'n_optimizers', n_optimizers)
         self.n_optimizers = max(n_optimizers, 1)
+        self.n_validators = max(n_validators, 1)
         self.validate = validate
         self.shared_model = shared_model
         self.n_incs = min(max(1, n_incs), self.n_optimizers)
@@ -270,5 +274,5 @@ class PSMAC(object):
                                  instance_mode=self.val_set,
                                  repetitions=1,
                                  use_epm=False,
-                                 n_jobs=self.n_optimizers)
+                                 n_jobs=self.n_validators)
         return self._get_mean_costs(incs, new_rh)
