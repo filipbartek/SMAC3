@@ -18,6 +18,7 @@ import pandas as pd
 
 from ConfigSpace.configuration_space import Configuration
 
+from smac.tae import StatusType
 from smac.tae.base import BaseRunner
 from smac.tae.execute_ta_run_hydra import ExecuteTARunHydra
 from smac.tae.execute_ta_run_hydra import ExecuteTARunOld
@@ -247,10 +248,18 @@ class Hydra(object):
             config_cost_per_inst = {}
             incs = [incs[i] for i in to_keep_ids]
             save_configs(incs, 'incs_kept')
+            instances_solved = set()
             self.logger.info('Kept incumbents')
             for inc in incs:
                 self.logger.info(inc)
                 config_cost_per_inst[inc] = cost_per_conf_v[inc] if self.val_set else cost_per_conf_e[inc]
+                for instance, statuses in status_per_conf_v[inc].items():
+                    if set(statuses) == {StatusType.SUCCESS}:
+                        # All the statuses are success, and there is at least one status.
+                        # TODO: Generalize: Weight the instances by the probability they are solved.
+                        instances_solved.add(instance)
+            run['instances_solved'].log(len(instances_solved))
+            self.logger.info(f"Number of instances solved: {len(instances_solved)}")
 
             cur_portfolio_cost = self._update_portfolio(incs, config_cost_per_inst)
             run['portfolio/cost'].log(cur_portfolio_cost)
