@@ -58,6 +58,7 @@ class Hydra(object):
     def __init__(self,
                  scenario: typing.Type[Scenario],
                  n_iterations: int,
+                 sequential_portfolio: bool = False,
                  val_set: str = 'train',
                  incs_per_round: int = 1,
                  n_optimizers: int = 1,
@@ -76,6 +77,7 @@ class Hydra(object):
             Scenario object
         n_iterations: int,
             number of Hydra iterations
+        sequential_portfolio: bool
         val_set: str
             Set to validate incumbent(s) on. [train, valX].
             train => whole training set,
@@ -100,6 +102,7 @@ class Hydra(object):
             self.__module__ + "." + self.__class__.__name__)
 
         self.n_iterations = n_iterations
+        self.sequential_portfolio = sequential_portfolio
         self.scenario = scenario
         self.run_id, self.rng = get_rng(rng, run_id, self.logger)
         self.kwargs = kwargs
@@ -183,8 +186,6 @@ class Hydra(object):
             self.output_dir = create_output_directory(self.scenario, run_id=self.run_id, logger=self.logger)
 
         scen = copy.deepcopy(self.scenario)
-        scen.output_dir_for_this_run = None
-        scen.output_dir = None
         run['optimizer'] = object_to_dict(self)
         for i in range(self.n_iterations):
             run_iteration = run.child(f'iteration/{i}')
@@ -205,7 +206,7 @@ class Hydra(object):
                     tae_kwargs = {}
                 tae_kwargs['cost_oracle'] = self.cost_per_inst
             self.optimizer = PSMAC(
-                scenario=self.scenario,
+                scenario=scen,
                 run_id=self.run_id,
                 rng=self.rng,
                 tae=tae,
@@ -262,26 +263,37 @@ class Hydra(object):
             self.logger.info(f"Number of instances solved: {len(instances_solved)}")
 
             cur_portfolio_cost = self._update_portfolio(incs, config_cost_per_inst)
-            run['portfolio/cost'].log(cur_portfolio_cost)
-            run['portfolio/cost_normalized'].log(self.scenario.normalize_cost(cur_portfolio_cost))
-            costs = np.fromiter(self.cost_per_inst.values(), float)
-            crashes = np.count_nonzero(costs >= self.scenario.cost_for_crash)
-            run['portfolio/crashes'].log(crashes)
-            run['portfolio/crashes_relative'].log(crashes / len(costs))
-            if self.scenario.run_obj == 'runtime':
-                timeouts = np.count_nonzero(costs >= self.scenario.cutoff * self.scenario.par_factor)
-                run['portfolio/timeouts'].log(timeouts)
-                run['portfolio/timeouts_relative'].log(timeouts / len(costs))
             save_configs(self.portfolio, 'portfolio')
-            if portfolio_cost <= cur_portfolio_cost:
-                self.logger.info("No further progress (%f) --- terminate hydra", portfolio_cost)
-                break
+            if self.sequential_portfolio:
+                if len(instances_solved) == 0:
+                    self.logger.info("No further progress --- terminate hydra")
+                    break
+                scen.train_insts = list(filter(lambda i: i not in instances_solved, scen.train_insts))
+                run['instances_unsolved'].log(len(scen.train_insts))
+                self.logger.info(f"Number of instances remaining unsolved: {len(scen.train_insts)}")
+                if len(scen.train_insts) == 0:
+                    self.logger.info("All instances have been solved --- terminate hydra")
+                    break
             else:
-                portfolio_cost = cur_portfolio_cost
-                self.logger.info("Current portfolio cost: %f", portfolio_cost)
+                run['portfolio/cost'].log(cur_portfolio_cost)
+                run['portfolio/cost_normalized'].log(self.scenario.normalize_cost(cur_portfolio_cost))
+                costs = np.fromiter(self.cost_per_inst.values(), float)
+                crashes = np.count_nonzero(costs >= self.scenario.cost_for_crash)
+                run['portfolio/crashes'].log(crashes)
+                run['portfolio/crashes_relative'].log(crashes / len(costs))
+                if self.scenario.run_obj == 'runtime':
+                    timeouts = np.count_nonzero(costs >= self.scenario.cutoff * self.scenario.par_factor)
+                    run['portfolio/timeouts'].log(timeouts)
+                    run['portfolio/timeouts_relative'].log(timeouts / len(costs))
+                if portfolio_cost <= cur_portfolio_cost:
+                    self.logger.info("No further progress (%f) --- terminate hydra", portfolio_cost)
+                    break
+                else:
+                    portfolio_cost = cur_portfolio_cost
+                    self.logger.info("Current portfolio cost: %f", portfolio_cost)
 
-            self.scenario.output_dir = os.path.join(self.top_dir, "psmac3-output_%s" % (
-                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S_%f')))
+            self.scenario.output_dir = os.path.join(self.top_dir, f"iteration_{i}")
+            scen.output_dir = self.scenario.output_dir
             self.output_dir = create_output_directory(self.scenario, run_id=self.run_id, logger=self.logger)
         read(self.rh, os.path.join(self.top_dir, 'psmac3*', 'run_' + str(MAXINT)), self.scenario.cs, self.logger)
         self.rh.save_json(fn=os.path.join(self.top_dir, 'all_validated_runs_runhistory.json'), save_external=True)

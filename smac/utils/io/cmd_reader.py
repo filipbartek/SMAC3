@@ -484,6 +484,10 @@ class CMDReader(object):
                               default=3,
                               type=int,
                               help="[dev] number of hydra iterations. Only active if mode is set to Hydra")
+        req_opts.add_argument("--sequential_portfolio",
+                              default=False,
+                              type=bool,
+                              dest="hydra_sequential_portfolio")
         req_opts.add_argument("--hydra_validation",
                               default='train',
                               choices=['train', 'val10', 'val20', 'val30', 'val40', 'val50', 'none'],

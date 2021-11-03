@@ -172,6 +172,7 @@ class SMACCLI(object):
                 run_id=main_args_.seed,
                 random_configuration_chooser=main_args_.random_configuration_chooser,
                 n_iterations=main_args_.hydra_iterations,
+                sequential_portfolio=main_args_.hydra_sequential_portfolio,
                 val_set=main_args_.hydra_validation,
                 incs_per_round=main_args_.hydra_incumbents_per_round,
                 n_optimizers=main_args_.hydra_n_optimizers,
