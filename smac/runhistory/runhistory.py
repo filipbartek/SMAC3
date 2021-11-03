@@ -780,9 +780,8 @@ class RunHistory(object):
         cost_per_inst: dict<instance name<str>, cost<float>>
         """
         runs_ = self.get_runs_for_config(config, only_max_observed_budget=True)
-        cost_per_inst = {}  # type: typing.Dict[str, typing.List[float]]
+        cost_per_inst = collections.defaultdict(list)  # type: typing.DefaultDict[str, typing.List[float]]
         for inst, seed, budget in runs_:
-            cost_per_inst[inst] = cost_per_inst.get(inst, [])
             rkey = RunKey(self.config_ids[config], inst, seed, budget)
             vkey = self.data[rkey]
             cost_per_inst[inst].append(vkey.cost)
