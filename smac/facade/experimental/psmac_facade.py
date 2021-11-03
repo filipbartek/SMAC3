@@ -218,21 +218,23 @@ class PSMAC(object):
         Returns
         -------
         Dict(Config -> Dict(inst_id (str) -> cost (float)))  (if real validation runs are performed)
+        Dict(Config -> Dict(inst_id (str) -> statuses (Counter(StatusType)))) (status distribution if real validation runs are performed)
         List(ints) (indices of best configurations if validation runs are performed)
         Dict(Config -> Dict(inst_id (str) -> cost (float)))  (if performance is estimated)
+        Dict(Config -> Dict(inst_id (str) -> statuses (Counter(StatusType)))) (status distribution if performance is estimated)
         List(ints) (indices of best configurations if performance is estimated)
 
         """
         if self.validate is True:
-            mean_costs_conf_valid, cost_per_config_valid = self.validate_incs(incs)
+            mean_costs_conf_valid, cost_per_config_valid, status_per_config_valid = self.validate_incs(incs)
             val_ids = list(map(lambda x: x[0],
                                sorted(enumerate(mean_costs_conf_valid), key=lambda y: y[1])))[:self.n_incs]
         else:
             cost_per_config_valid = val_ids = None
-        mean_costs_conf_estimate, cost_per_config_estimate = self._get_mean_costs(incs, self.rh)
+        mean_costs_conf_estimate, cost_per_config_estimate, status_per_config_estimate = self._get_mean_costs(incs, self.rh)
         est_ids = list(map(lambda x: x[0],
                            sorted(enumerate(mean_costs_conf_estimate), key=lambda y: y[1])))[:self.n_incs]
-        return cost_per_config_valid, val_ids, cost_per_config_estimate, est_ids
+        return cost_per_config_valid, status_per_config_valid, val_ids, cost_per_config_estimate, status_per_config_estimate, est_ids
 
     def _get_mean_costs(self, incs: typing.List[Configuration], new_rh: RunHistory):
         """
@@ -249,19 +251,22 @@ class PSMAC(object):
         -------
         List[float] means
         Dict(Config -> Dict(inst_id(str) -> float))
+        Dict(Config -> Dict(inst_id(str) -> Counter(StatusType)))
 
         """
         config_cost_per_inst = {}
+        config_status_per_inst = {}
         results = []
         for incumbent in incs:
-            cost_per_inst = new_rh.get_instance_costs_for_config(config=incumbent)
+            cost_per_inst, status_per_inst = new_rh.get_instance_costs_for_config(config=incumbent)
             config_cost_per_inst[incumbent] = cost_per_inst
+            config_status_per_inst[incumbent] = status_per_inst
             values = list(cost_per_inst.values())
             if values:
                 results.append(np.mean(values))
             else:
                 results.append(np.nan)
-        return results, config_cost_per_inst
+        return results, config_cost_per_inst, config_status_per_inst
 
     def validate_incs(self, incs: np.ndarray):
         """

@@ -778,15 +778,18 @@ class RunHistory(object):
         Returns
         -------
         cost_per_inst: dict<instance name<str>, cost<float>>
+        status_per_inst: dict<instance name<str>, statuses<Counter<StatusType>>>
         """
         runs_ = self.get_runs_for_config(config, only_max_observed_budget=True)
         cost_per_inst = collections.defaultdict(list)  # type: typing.DefaultDict[str, typing.List[float]]
+        status_per_inst = collections.defaultdict(collections.Counter)
         for inst, seed, budget in runs_:
             rkey = RunKey(self.config_ids[config], inst, seed, budget)
             vkey = self.data[rkey]
             cost_per_inst[inst].append(vkey.cost)
+            status_per_inst[inst][vkey.status] += 1
         cost_per_inst = dict([(inst, np.mean(costs)) for inst, costs in cost_per_inst.items()])
-        return cost_per_inst
+        return cost_per_inst, status_per_inst
 
     def save_statistics(self, output_dir, scenario):
         self.logger.info(f'Saving runhistory statistics in {output_dir}')

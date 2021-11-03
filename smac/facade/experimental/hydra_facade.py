@@ -238,7 +238,7 @@ class Hydra(object):
 
             save_configs(incs, 'incs_all')
 
-            cost_per_conf_v, val_ids, cost_per_conf_e, est_ids = self.optimizer.get_best_incumbents_ids(incs)
+            cost_per_conf_v, status_per_conf_v, val_ids, cost_per_conf_e, status_per_conf_e, est_ids = self.optimizer.get_best_incumbents_ids(incs)
             if self.val_set:
                 to_keep_ids = val_ids[:self.incs_per_round]
             else:
@@ -321,7 +321,7 @@ class Hydra(object):
         else:  # No validated data. Set the mean to the approximated mean
             means = []  # can contain nans as not every instance was evaluated thus we should use nanmean to approximate
             for kept in incs:
-                means.append(np.nanmean(list(self.optimizer.rh.get_instance_costs_for_config(kept).values())))
+                means.append(np.nanmean(list(self.optimizer.rh.get_instance_costs_for_config(kept)[0].values())))
                 self.portfolio.append(kept)
             if self.portfolio_cost:
                 new_mean = self.portfolio_cost * (len(self.portfolio) - len(incs)) / len(self.portfolio)
