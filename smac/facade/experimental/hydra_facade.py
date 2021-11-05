@@ -269,6 +269,8 @@ class Hydra(object):
                     self.logger.info("No further progress --- terminate hydra")
                     break
                 scen.train_insts = list(filter(lambda i: i not in instances_solved, scen.train_insts))
+                self.val_set = list(filter(lambda i: i not in instances_solved, self.val_set))
+                self.optimizer.val_set = self.val_set
                 run['instances_unsolved'].log(len(scen.train_insts))
                 self.logger.info(f"Number of instances remaining unsolved: {len(scen.train_insts)}")
                 if len(scen.train_insts) == 0:
