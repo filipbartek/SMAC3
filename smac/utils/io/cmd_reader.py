@@ -768,6 +768,12 @@ class CMDReader(object):
         scen_opts.add_argument('--cs',
                                default=None,  # ConfigSpace object, overridden by --paramfile
                                help=SUPPRESS)
+        scen_opts.add_argument("--hydra-cutoffs", "--hydra_cutoffs", dest="hydra_cutoffs",
+                               type=str,
+                               help="Comma-separated sequence of cutoffs to use in the Hydra iterations.")
+        scen_opts.add_argument("--hydra-wallclock-limits", "--hydra_wallclock_limits", dest="hydra_wallclock_limits",
+                               type=str,
+                               help="Comma-separated sequence of wallclock limits to use in the Hydra iterations.")
 
         self.parser.add_parser(self.scen_parser)
         self.scen_cmd_actions, self.scen_cmd_translations = CMDReader._extract_action_info(self.scen_parser._actions)

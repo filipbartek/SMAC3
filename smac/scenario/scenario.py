@@ -88,6 +88,8 @@ class Scenario(object):
                 "Wrong type of scenario (str or dict are supported)")
 
         for arg_name, arg_value in scenario.items():
+            if arg_name in ("hydra_cutoffs", "hydra_wallclock_limits") and isinstance(arg_value, str):
+                arg_value = list(map(float, arg_value.split(',')))
             setattr(self, arg_name, arg_value)
 
         self._transform_arguments()

@@ -205,6 +205,15 @@ class Hydra(object):
                 else:
                     tae_kwargs = {}
                 tae_kwargs['cost_oracle'] = self.cost_per_inst
+            if self.sequential_portfolio:
+                try:
+                    scen.cutoff = float(scen.hydra_cutoffs[i])
+                except (IndexError, TypeError):
+                    pass
+            try:
+                scen.wallclock_limit = float(scen.hydra_wallclock_limits[i])
+            except (IndexError, TypeError):
+                pass
             self.optimizer = PSMAC(
                 scenario=scen,
                 run_id=self.run_id,
