@@ -181,9 +181,6 @@ class PSMAC(object):
         if self.scenario.input_psmac_dirs is None:
             self.scenario.input_psmac_dirs = os.path.sep.join((self.scenario.output_dir, 'run_*'))
 
-        scen = copy.deepcopy(self.scenario)
-        scen.output_dir_for_this_run = None
-        scen.output_dir = None
         self.logger.info("+" * 120)
         self.logger.info("PSMAC run")
 
