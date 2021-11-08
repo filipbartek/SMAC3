@@ -181,13 +181,13 @@ class Hydra(object):
         if self.output_dir is None:
             self.top_dir = "hydra-output_%s" % (
                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S_%f'))
-            self.scenario.output_dir = os.path.join(self.top_dir, "psmac3-output_%s" % (
-                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S_%f')))
-            self.output_dir = create_output_directory(self.scenario, run_id=self.run_id, logger=self.logger)
+            self.scenario.output_dir = self.top_dir
+            self.output_dir = self.top_dir
 
         scen = copy.deepcopy(self.scenario)
         run['optimizer'] = object_to_dict(self)
         for i in range(self.n_iterations):
+            scen.output_dir = os.path.join(self.top_dir, f"iteration_{i}")
             run_iteration = run.child(f'iteration/{i}')
             run['scenario_output_dir'].log(self.scenario.output_dir)
             run['output_dir'].log(self.output_dir)
@@ -229,7 +229,7 @@ class Hydra(object):
                 neptune_run=run_iteration,
                 **self.kwargs
             )
-            self.optimizer.output_dir = self.output_dir
+            self.optimizer.output_dir = scen.output_dir
             incs = self.optimizer.optimize()
 
             def save_configs(incs, name):
@@ -303,9 +303,6 @@ class Hydra(object):
                     portfolio_cost = cur_portfolio_cost
                     self.logger.info("Current portfolio cost: %f", portfolio_cost)
 
-            self.scenario.output_dir = os.path.join(self.top_dir, f"iteration_{i}")
-            scen.output_dir = self.scenario.output_dir
-            self.output_dir = create_output_directory(self.scenario, run_id=self.run_id, logger=self.logger)
         read(self.rh, os.path.join(self.top_dir, 'psmac3*', 'run_' + str(MAXINT)), self.scenario.cs, self.logger)
         self.rh.save_json(fn=os.path.join(self.top_dir, 'all_validated_runs_runhistory.json'), save_external=True)
         run['runhistory'].upload(os.path.join(self.top_dir, 'all_validated_runs_runhistory.json'))
