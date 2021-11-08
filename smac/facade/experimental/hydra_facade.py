@@ -339,8 +339,8 @@ class Hydra(object):
                     self.portfolio.append(kept)
                     cost_per_inst = config_cost_per_inst[kept]
                     if self.cost_per_inst:
-                        if len(self.cost_per_inst) != len(cost_per_inst):
-                            raise ValueError('Num validated Instances mismatch!')
+                        if not set(cost_per_inst) <= set(self.cost_per_inst):
+                            raise ValueError('Validated Instances mismatch!')
                         else:
                             for key in cost_per_inst:
                                 self.cost_per_inst[key] = min(self.cost_per_inst[key], cost_per_inst[key])
