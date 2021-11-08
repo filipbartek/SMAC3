@@ -106,35 +106,26 @@ def get_rng(
     if logger is None:
         logger = logging.getLogger('GetRNG')
     # initialize random number generator
-    if rng is not None and not isinstance(rng, (int, np.random.RandomState)):
-        raise TypeError('Argument rng accepts only arguments of type None, int or np.random.RandomState, '
-                        'you provided %s.' % str(type(rng)))
     if run_id is not None and not isinstance(run_id, int):
         raise TypeError('Argument run_id accepts only arguments of type None, int, '
                         'you provided %s.' % str(type(run_id)))
 
-    if rng is None and run_id is None:
-        # Case that both are None
-        logger.debug('No rng and no run_id given: using a random value to initialize run_id.')
-        rng_return = np.random.RandomState()
-        run_id_return = rng_return.randint(MAXINT)
-    elif rng is None and isinstance(run_id, int):
-        logger.debug('No rng and no run_id given: using run_id %d as seed.', run_id)
-        rng_return = np.random.RandomState(seed=run_id)
-        run_id_return = run_id
-    elif isinstance(rng, int) and run_id is None:
-        run_id_return = rng
-        rng_return = np.random.RandomState(seed=rng)
-    elif isinstance(rng, int) and isinstance(run_id, int):
-        run_id_return = run_id
-        rng_return = np.random.RandomState(seed=rng)
-    elif isinstance(rng, np.random.RandomState) and run_id is None:
+    if rng is None and isinstance(run_id, int):
+        logger.debug('No rng given: using run_id %d as seed.', run_id)
+        rng = run_id
+    if run_id is None and isinstance(rng, int):
+        logger.debug('No run_id given: using rng %d as run_id.', rng)
+        run_id = rng
+
+    if isinstance(rng, np.random.RandomState):
         rng_return = rng
-        run_id_return = rng.randint(MAXINT)
-    elif isinstance(rng, np.random.RandomState) and isinstance(run_id, int):
-        rng_return = rng
+    else:
+        rng_return = np.random.RandomState(seed=rng)
+
+    if isinstance(run_id, int):
         run_id_return = run_id
     else:
-        raise ValueError('This should not happen! Please contact the developers! Arguments: rng=%s of type %s and '
-                         'run_id=%s of type %s' % (rng, type(rng), str(run_id), type(run_id)))
+        logger.debug('No run_id given: using a random value to initialize run_id.')
+        run_id_return = rng_return.randint(MAXINT)
+
     return run_id_return, rng_return
