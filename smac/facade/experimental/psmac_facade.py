@@ -32,6 +32,7 @@ def optimize(scenario: typing.Type[Scenario],
              tae: typing.Type[BaseRunner],
              tae_kwargs: typing.Dict,
              rng: typing.Union[np.random.RandomState, int],
+             run_id: int,
              output_dir: str,
              neptune_namespace,
              **kwargs) -> Configuration:
@@ -65,8 +66,8 @@ def optimize(scenario: typing.Type[Scenario],
                         format='[%(levelname)s/%(processName)s/%(asctime)s/%(name)s] %(message)s',
                         datefmt='%Y-%m-%dT%H:%M:%S')
     neptune_run = smac_neptune.get_run(f'{neptune_namespace}/subprocess/{rng}', local_monitoring=True)
-    solver = SMAC4AC(scenario=scenario, tae_runner=tae, tae_runner_kwargs=tae_kwargs, rng=rng, neptune_run=neptune_run,
-                     **kwargs)
+    solver = SMAC4AC(scenario=scenario, tae_runner=tae, tae_runner_kwargs=tae_kwargs, rng=rng, run_id=run_id,
+                     neptune_run=neptune_run, **kwargs)
     solver.stats.start_timing()
     solver.stats.print_stats()
     neptune_run['output_dir'] = solver.output_dir
@@ -191,7 +192,8 @@ class PSMAC(object):
                 self.scenario,  # Scenario object
                 self._tae,  # type of tae to run target with
                 self._tae_kwargs,
-                p,  # seed for the rng/run_id
+                (self.run_id, p),  # seed for the rng
+                p,  # run_id
                 self.output_dir,  # directory to create outputs in
                 self.neptune_run.namespace,
                 **self.kwargs

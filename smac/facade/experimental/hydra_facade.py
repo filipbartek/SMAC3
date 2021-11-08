@@ -216,7 +216,7 @@ class Hydra(object):
                 pass
             self.optimizer = PSMAC(
                 scenario=scen,
-                run_id=self.run_id,
+                run_id=i,
                 rng=self.rng,
                 tae=tae,
                 tae_kwargs=tae_kwargs,
