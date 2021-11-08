@@ -1,3 +1,4 @@
+import copy
 import inspect
 import logging
 from typing import List, Union, Optional, Type, Callable, cast, Dict, Any
@@ -190,6 +191,7 @@ class SMAC4AC(object):
         self.logger = logging.getLogger(
             self.__module__ + "." + self.__class__.__name__)
 
+        scenario = copy.deepcopy(scenario)
         self.scenario = scenario
         self.output_dir = ""
         if not restore_incumbent:
