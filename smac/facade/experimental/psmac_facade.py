@@ -65,7 +65,7 @@ def optimize(scenario: typing.Type[Scenario],
     logging.basicConfig(level=logging.INFO,
                         format='[%(levelname)s/%(processName)s/%(asctime)s/%(name)s] %(message)s',
                         datefmt='%Y-%m-%dT%H:%M:%S')
-    neptune_run = smac_neptune.get_run(f'{neptune_namespace}/subprocess/{rng}', local_monitoring=True)
+    neptune_run = smac_neptune.get_run(f'{neptune_namespace}/subprocess/{run_id}', local_monitoring=True)
     solver = SMAC4AC(scenario=scenario, tae_runner=tae, tae_runner_kwargs=tae_kwargs, rng=rng, run_id=run_id,
                      neptune_run=neptune_run, **kwargs)
     solver.stats.start_timing()
