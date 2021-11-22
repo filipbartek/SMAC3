@@ -49,7 +49,7 @@ def read(run_history: RunHistory,
     else:
         parsed_output_dirs = output_dirs
 
-    for output_directory in tqdm(parsed_output_dirs, unit='directory', desc='Reading runhistory files'):
+    for output_directory in parsed_output_dirs:
         for file_in_output_directory in os.listdir(output_directory):
             match = re.match(RUNHISTORY_RE, file_in_output_directory)
             valid_match = re.match(VALIDATEDRUNHISTORY_RE, file_in_output_directory)
