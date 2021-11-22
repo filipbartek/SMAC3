@@ -520,7 +520,7 @@ class RunHistory(object):
                        "config_origins": config_origins,
                        "configs": configs}, fp, cls=EnumEncoder, indent=2)
 
-    def load_json(self, fn: str, cs: ConfigurationSpace) -> None:
+    def load_json(self, fn: str, cs: ConfigurationSpace, cost_for_timeout=None) -> None:
         """Load and runhistory in json representation from disk.
 
         Overwrites current runhistory!
@@ -560,10 +560,14 @@ class RunHistory(object):
         # important to use add method to use all data structure correctly
         for k, v in all_data["data"]:
             if int(k[0]) in self.ids_config:
+                cost = float(v[0])
+                status = StatusType(v[2])
+                if cost_for_timeout is not None and status == StatusType.TIMEOUT:
+                    cost = cost_for_timeout
                 self.add(config=self.ids_config[int(k[0])],
-                         cost=float(v[0]),
+                         cost=cost,
                          time=float(v[1]),
-                         status=StatusType(v[2]),
+                         status=status,
                          instance_id=k[1],
                          seed=int(k[2]),
                          budget=float(k[3]) if len(k) == 4 else 0,
