@@ -425,6 +425,11 @@ class RunHistory(object):
         rval = [InstSeedBudgetKey(k.instance, k.seed, budget) for k, v in runs.items() for budget in v]
         return rval
 
+    def get_run(self, run_info):
+        config_id = self.config_ids[run_info.config]
+        run_key = RunKey(config_id, run_info.instance, run_info.seed, run_info.budget)
+        return self.data[run_key]
+
     def get_all_configs(self) -> typing.List[Configuration]:
         """Return all configurations in this RunHistory object
 
