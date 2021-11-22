@@ -65,7 +65,7 @@ def read(run_history: RunHistory,
                 numruns_in_runhistory = new_numruns_in_runhistory
 
     difference = numruns_in_runhistory - initial_numruns_in_runhistory
-    logger.info('Shared model mode: Finished loading new runs, found %d new runs.' % difference)
+    logger.debug('Shared model mode: Finished loading new runs, found %d new runs.' % difference)
 
 
 def write(run_history: RunHistory, output_directory: str, logger: logging.Logger) -> None:
