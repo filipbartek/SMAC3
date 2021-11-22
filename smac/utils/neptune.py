@@ -1,9 +1,14 @@
 import logging
 import os
+import warnings
 
 import neptune.new as neptune
 from neptune.new import NeptuneUninitializedException
+from neptune.new.exceptions import NeptuneInvalidApiTokenException, NeptuneMissingApiTokenException
+from neptune.new.exceptions import NeptuneMissingProjectNameException
 from neptune.new.integrations.python_logger import NeptuneHandler
+
+log = logging.getLogger(__name__)
 
 
 def object_to_dict(o):
@@ -65,7 +70,14 @@ def get_run(namespace=None, local_monitoring=False, **kwargs):
     except NeptuneUninitializedException:
         if local_monitoring:
             kwargs['monitoring_namespace'] = f'{namespace}/monitoring'
-        run = neptune.init(**kwargs)
+        try:
+            run = neptune.init(**kwargs)
+        except (NeptuneMissingProjectNameException,
+                NeptuneMissingApiTokenException,
+                NeptuneInvalidApiTokenException) as e:
+            warnings.warn(f'Failed to initialize a Neptune run due to {type(e).__name__}.')
+            log.debug(e)
+            run = neptune.init(mode='debug', **kwargs)
         logging.getLogger().addHandler(NeptuneHandler(run=run))
     return Run(run, namespace=namespace)
 
