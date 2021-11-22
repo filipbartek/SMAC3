@@ -2,6 +2,7 @@ import logging
 import os
 
 import neptune.new as neptune
+from neptune.new import NeptuneUninitializedException
 from neptune.new.integrations.python_logger import NeptuneHandler
 
 
@@ -61,7 +62,7 @@ def configspace_to_dict(cs):
 def get_run(namespace=None, local_monitoring=False, **kwargs):
     try:
         run = neptune.get_last_run()
-    except neptune.NeptuneUninitializedException:
+    except NeptuneUninitializedException:
         if local_monitoring:
             kwargs['monitoring_namespace'] = f'{namespace}/monitoring'
         run = neptune.init(**kwargs)
