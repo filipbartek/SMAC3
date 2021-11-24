@@ -5,8 +5,6 @@ import typing
 import logging
 import glob
 
-from tqdm import tqdm
-
 from smac.runhistory.runhistory import RunHistory
 from smac.configspace import ConfigurationSpace
 
