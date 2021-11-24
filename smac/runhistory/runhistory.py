@@ -800,11 +800,11 @@ class RunHistory(object):
         cost_per_inst = dict([(inst, np.mean(costs)) for inst, costs in cost_per_inst.items()])
         return cost_per_inst, status_per_inst
 
-    def save_statistics(self, output_dir, scenario):
+    def save_statistics(self, output_dir, scenario, configs=None):
         self.logger.info(f'Saving runhistory statistics in {output_dir}')
         os.makedirs(output_dir, exist_ok=True)
 
-        runs = self.get_dataframe_runs(scenario)
+        runs = self.get_dataframe_runs(scenario, configs)
         runs.to_csv(os.path.join(output_dir, 'runs.csv'), index=False)
 
         self.logger.info('Statistics of combinations of configuration and instance - computing...')
@@ -823,7 +823,7 @@ class RunHistory(object):
         self.logger.info('Statistics of instances - done.')
         instances.to_csv(os.path.join(output_dir, 'instances.csv'))
 
-    def get_dataframe_runs(self, scenario):
+    def get_dataframe_runs(self, scenario, configs=None):
         def get_record(k, v):
             record = {**k._asdict(), **v._asdict()}
             if scenario is not None:
@@ -832,7 +832,21 @@ class RunHistory(object):
                     record['time_rel'] = v.time / scenario.cutoff
             return record
 
-        return pd.DataFrame.from_records([get_record(k, v) for k, v in self.data.items()]).astype(
+        if configs is None:
+            records = (get_record(k, v) for k, v in self.data.items())
+        else:
+            def generate_records():
+                for config in configs:
+                    config_id = self.config_ids[config]
+                    keys = self.get_runs_for_config(config, False)
+                    for key in keys:
+                        run_key = RunKey(config_id, key.instance, key.seed, key.budget)
+                        run_value = self.data[run_key]
+                        yield get_record(run_key, run_value)
+
+            records = generate_records()
+
+        return pd.DataFrame.from_records(records).astype(
             {
                 'config_id': pd.UInt32Dtype(),
                 'instance_id': 'object',
