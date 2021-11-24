@@ -802,6 +802,8 @@ class RunHistory(object):
 
     def save_statistics(self, output_dir, scenario):
         self.logger.info(f'Saving runhistory statistics in {output_dir}')
+        os.makedirs(output_dir, exist_ok=True)
+
         runs = self.get_dataframe_runs(scenario)
         runs.to_csv(os.path.join(output_dir, 'runs.csv'), index=False)
 
