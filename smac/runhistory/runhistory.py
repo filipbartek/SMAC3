@@ -922,10 +922,12 @@ class RunHistory(object):
         return result
 
     def get_dataframe_configs(self, runs, configs_instances, extra_components=None):
+        config_ids = configs_instances.index.levels[0]
+        assert set(config_ids) <= set(self.ids_config)
         grouped = configs_instances.groupby('config_id')
         grouped_runs = runs.groupby('config_id')
         components = {
-            'origin': pd.Series({k: v.origin for k, v in self.ids_config.items()}, dtype='category'),
+            'origin': pd.Series({k: self.ids_config[k].origin for k in config_ids}, dtype='category'),
             'runs': grouped_runs.size().astype(pd.UInt32Dtype()),
             'instances': grouped.size().astype(pd.UInt32Dtype()),
             'cost': grouped.cost.mean(),
@@ -938,8 +940,8 @@ class RunHistory(object):
         components['status_rel_per_run'] = components['status'].divide(components['runs'], axis='index')
         if extra_components is not None:
             components.update(extra_components)
-        components['config'] = pd.DataFrame.from_records((v.get_dictionary() for v in self.ids_config.values()),
-                                                         index=self.ids_config.keys())
+        components['config'] = pd.DataFrame.from_records((self.ids_config[k].get_dictionary() for k in config_ids),
+                                                         index=config_ids)
         df = self.concat(components)
         df.index.name = 'config_id'
         return df
